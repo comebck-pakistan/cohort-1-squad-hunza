@@ -11,37 +11,38 @@
 - Huzaifa Imran
 - Saman Kalsoom
 
+**GitHub usernames:**
+
+- [@Huzaifa828](https://github.com/Huzaifa828)
+- [@MisbahJaved22](https://github.com/MisbahJaved22)
+- [@SamanKalsoom](https://github.com/SamanKalsoom)
+- [@Mahnooraqeel](https://github.com/Mahnooraqeel)
+
 ---
 
 ## 💡 Our Idea
 
-Our squad is building from **one** of the ten ideas in the
-[Cohort 1 Product Challenge](https://github.com/Comebck-Pakistan/cohort-1-product-challenge). The
-idea is a starting line, not a spec — our job is to **narrow it** to one specific user,
-one painful problem, and one small thing we can ship in 8 weeks.
+Our squad picked **[Idea 9 — The Fair First-Round Recruiter](https://github.com/Comebck-Pakistan/cohort-1-product-challenge#idea-9--the-fair-first-round-recruiter)** from the [Cohort 1 Product Challenge](https://github.com/Comebck-Pakistan/cohort-1-product-challenge). Below are our ideation-stage validation answers, reproduced exactly as we submitted them.
 
-**Pick one of the ten ideas, then delete the rest of this list:**
+### One specific user
 
-1. The Small-Business Brain (WhatsApp-first)
-2. The Urdu-First Study Coach
-3. The Shoebox-to-Books Bookkeeper
-4. The Freelancer's Co-Pilot
-5. The Always-On Front Desk (Voice/WhatsApp Agent)
-6. The Farmer's Advisor in Your Pocket
-7. The SME Paperwork Generator
-8. The Social-Commerce Support Agent
-9. The Fair First-Round Recruiter
-10. The Public-Services Navigator
+A HR manager at a small recruitment agency, who is the only recruiter on the team, manages multiple open positions simultaneously and manually tracks candidates through Gmail and spreadsheets.
 
-### 📌 Our pick
+### The painful problem
 
-> _Fill this in as a squad._
+A solo recruiter at a small recruitment agency manages multiple open positions while receiving hundreds of job applications through Gmail every day. They spend hours manually screening resumes, tracking candidates in spreadsheets, and sending repetitive emails such as acknowledgements, interview invitations, rejections, and follow-ups. The sheer volume means genuine candidates get delayed responses or no response at all, and by the time the recruiter reaches them, they have already accepted another offer. Slow and inconsistent communication creates a poor candidate experience and can harm the employer's reputation through negative reviews and word of mouth.
 
-- **Idea we picked:** _#__ — ____________________________________________
-- **One specific user:** _______________________________________________
-- **The painful problem:** _____________________________________________
-- **Our 8-week wedge (the one small thing we'll ship):** _______________
-- **The one number that proves people want it:** _______________________
+### Our 8-week wedge
+
+An AI recruitment assistant that integrates with a recruiter's Gmail to automatically read incoming emails, categorize them as new applications, candidate queries, follow-ups, interview responses, or other recruitment-related messages, and assign Gmail labels accordingly for easy organization. It then drafts a personalized reply in the recruiter's preferred tone. The recruiter reviews and approves each response with a single click before it is sent, saving hours of manual work while maintaining full control.
+
+### The one number that proves people want it
+
+In our primary survey, 3 out of 3 recruiters confirmed they manually handle repetitive candidate emails daily with zero automation tools. Our secondary research found 124 documented instances across Reddit and LinkedIn where recruiters actively expressed frustration about inbox overload. If that many people are complaining publicly, the ones staying silent are dealing with the same problem.
+
+### Why we picked this idea
+
+We conducted secondary market research before picking this. A comprehensive analysis of recruiter discussions across Reddit, LinkedIn, and industry benchmark reports from 2024 to 2026 confirmed the problem with hard data: recruiters are processing 2.7x more applications than 3 years ago with 56% smaller teams, LinkedIn response rates have dropped from 30% to 8%, and a 2025 academic study specifically identified digital communication overload as the primary burnout driver among Pakistani corporate employees. We picked this because the pain is documented, the user is reachable on our network this week for discovery interviews, and our team has the technical skills to build the Gmail integration and AI drafting layer within the 8-week timeline.
 
 ---
 
