@@ -1,0 +1,9 @@
+# Ignore our virtual environment
+hrenv/
+
+# Ignore local environment variables with private keys
+.env
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
