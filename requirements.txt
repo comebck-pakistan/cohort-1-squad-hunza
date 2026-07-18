@@ -8,3 +8,4 @@ redis==8.0.1
 pypdf==5.3.0
 python-docx==1.2.0
 vecs==0.4.3
+pytest==8.3.5

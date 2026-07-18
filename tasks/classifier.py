@@ -48,4 +48,4 @@ result = classifier(
     subject="Interview tomorrow at 10am - can we reschedule?",
     body="Hi, I have a conflict tomorrow morning. Can we move the interview to the afternoon?"
 )
-print(result)
+print(result)    
