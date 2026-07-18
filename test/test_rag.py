@@ -1,4 +1,4 @@
-from ai_worker.rag.embedder import embed_text
+from rag.embedder import embed_text
 
 
 def test_embed_text():

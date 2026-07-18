@@ -43,9 +43,3 @@ def classifier(subject:str,body:str) -> str:
     chain=prompt|llm|parser
     result=chain.invoke({"subject":subject,"body":body})
     return result
-
-result = classifier(
-    subject="Interview tomorrow at 10am - can we reschedule?",
-    body="Hi, I have a conflict tomorrow morning. Can we move the interview to the afternoon?"
-)
-print(result)    
