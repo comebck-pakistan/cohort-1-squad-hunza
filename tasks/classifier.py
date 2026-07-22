@@ -1,4 +1,4 @@
-from langchain_core.prompts import ChatMessagePromptTemplate,ChatPromptTemplate 
+from langchain_core.prompts import ChatPromptTemplate 
 from langchain_core.output_parsers import StrOutputParser
 from config import get_llm
 from database import get_db
@@ -42,4 +42,93 @@ def classifier(subject:str,body:str) -> str:
 
     chain=prompt|llm|parser
     result=chain.invoke({"subject":subject,"body":body})
-    return result
+    lines=result.strip().split("\n")
+    category='General Inquiry'
+    priority='Medium'
+
+    for line in lines:
+        if line.startswith('Category:'):
+            category=line.replace("Category:","")
+        elif line.startswith("Priority:"):
+            priority=line.replace("Priority:","")
+
+
+    return {"category": category.strip(), "priority": priority.strip()}
+
+
+def classify_and_save(email_id:str):
+    db=get_db()
+    email_data=db.table("emails").select("*")\
+    .eq("id",email_id).single()\
+    .execute()
+
+    if not email_data.data:
+        print("Email not found")
+        return
+
+    email=email_data.data
+    subject=email.get('subject','')
+    body=email.get('body_text','')
+
+    classification=classifier(subject,body)
+    category=classification.get("category","")
+    priority=classification.get("priority","")
+    print(f"Email {email_id} → Category: {category} | Priority: {priority}")
+
+    db.table('email_categories').insert({
+        "email_id":email_id,
+        "category":category,
+        "priority":priority,
+        "confidence_score":1.0,
+        "is_duplicate_question":False
+    }).execute()
+
+    db.table('emails').update({
+        "is_processed":True
+    }).eq("id",email_id).execute()
+
+    return f"Category: {category} Priority: {priority}"
+
+
+
+
+    # #def classify_and_save(email_id: str):
+    # db = get_db()
+
+    # email_data = db.table("emails")\
+    #     .select("*")\
+    #     .eq("id", email_id)\
+    #     .single()\
+    #     .execute()
+
+    # if not email_data.data:
+    #     print(f"Email {email_id} not found")
+    #     return
+
+    # email = email_data.data
+    # subject = email.get("subject", "")
+    # body = email.get("body_text", "")
+
+    # # run classification
+    # result = classify_email(subject, body)
+    # category = result.get("category", "General Inquiry")
+    # priority = result.get("priority", "Medium")
+
+    # print(f"Email {email_id} → Category: {category} | Priority: {priority}")
+
+    # # save to email_categories table
+    # db.table("email_categories").insert({
+    #     "email_id": email_id,
+    #     "category": category,
+    #     "priority": priority,
+    #     "confidence_score": 1.0,
+    #     "is_duplicate_question": False,
+    # }).execute()
+
+    # # mark email as processed
+    # db.table("emails")\
+    #     .update({"is_processed": True})\
+    #     .eq("id", email_id)\
+    #     .execute()
+
+    # return {"category": category, "priority": priority}
