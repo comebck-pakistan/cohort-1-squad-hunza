@@ -91,44 +91,22 @@ def classify_and_save(email_id:str):
 
 
 
+ACTION_MAP = {
+    "New Applicant": "Review Resume",
+    "Candidate Follow-up": "Reply to Candidate",
+    "Interview Scheduling": "Schedule Interview",
+    "Interview Reschedule": "Reschedule Interview",
+    "Documents Submitted": "Verify Documents",
+    "Offer Acceptance": "Begin Onboarding",
+    "Offer Rejection": "Close Application",
+    "General Inquiry": "Reply to Candidate",
+    "Referral": "Review Referral",
+    "Candidate Withdrawal": "Close Application"
+}
 
-    # #def classify_and_save(email_id: str):
-    # db = get_db()
-
-    # email_data = db.table("emails")\
-    #     .select("*")\
-    #     .eq("id", email_id)\
-    #     .single()\
-    #     .execute()
-
-    # if not email_data.data:
-    #     print(f"Email {email_id} not found")
-    #     return
-
-    # email = email_data.data
-    # subject = email.get("subject", "")
-    # body = email.get("body_text", "")
-
-    # # run classification
-    # result = classify_email(subject, body)
-    # category = result.get("category", "General Inquiry")
-    # priority = result.get("priority", "Medium")
-
-    # print(f"Email {email_id} → Category: {category} | Priority: {priority}")
-
-    # # save to email_categories table
-    # db.table("email_categories").insert({
-    #     "email_id": email_id,
-    #     "category": category,
-    #     "priority": priority,
-    #     "confidence_score": 1.0,
-    #     "is_duplicate_question": False,
-    # }).execute()
-
-    # # mark email as processed
-    # db.table("emails")\
-    #     .update({"is_processed": True})\
-    #     .eq("id", email_id)\
-    #     .execute()
-
-    # return {"category": category, "priority": priority}
+def get_suggested_action(category: str) -> str:
+    """
+    Maps a category to a suggested next action.
+    Defaults to Manual Review if category is unrecognized.
+    """
+    return ACTION_MAP.get(category, "Manual Review")
