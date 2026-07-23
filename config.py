@@ -13,7 +13,7 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 GPT_MODEL=""
 # similarity threshold for duplicate question detection
 # if a question matches the job posting above this score, flag as duplicate
-DUPLICATE_THRESHOLD = 0.75
+DUPLICATE_THRESHOLD = 0.45
 
 def get_llm(temperature=0):
     """
