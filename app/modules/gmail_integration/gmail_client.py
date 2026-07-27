@@ -107,3 +107,35 @@ def _has_attachment(payload: dict) -> bool:
 def _decode_b64url(data: str) -> str:
     padded = data + "=" * (-len(data) % 4)
     return base64.urlsafe_b64decode(padded).decode("utf-8", errors="replace")
+
+
+async def get_attachment(access_token: str, message_id: str, attachment_id: str) -> bytes:
+    """Downloads attachment bytes from Gmail API."""
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.get(
+            f"{GMAIL_API_BASE}/messages/{message_id}/attachments/{attachment_id}",
+            headers=_auth_header(access_token)
+        )
+        resp.raise_for_status()
+        data = resp.json().get("data", "")
+        padded = data + "=" * (-len(data) % 4)
+        return base64.urlsafe_b64decode(padded)
+
+
+def get_attachment_info(payload: dict) -> list[dict]:
+    """
+    Returns list of attachment info dicts from email payload.
+    Each dict has: filename, attachment_id, mime_type
+    """
+    attachments = []
+    for part in payload.get("parts", []):
+        if part.get("filename") and part.get("body", {}).get("attachmentId"):
+            attachments.append({
+                "filename": part["filename"],
+                "attachment_id": part["body"]["attachmentId"],
+                "mime_type": part.get("mimeType", "")
+            })
+        # check nested parts
+        if part.get("parts"):
+            attachments.extend(get_attachment_info(part))
+    return attachments

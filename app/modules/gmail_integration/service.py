@@ -10,6 +10,10 @@ from app.modules.gmail_integration.google_oauth import (
 from tasks.classifier import classify_and_save
 from tasks.duplicate import check_and_save    
 from tasks.draft import generate_and_save
+<<<<<<< HEAD
+=======
+from tasks.resume import process_resume_from_gmail
+>>>>>>> 4beb204 (feat: CAND-01 and CAND-02 complete - resume download, storage, and candidate extraction)
 
 
 async def handle_gmail_callback(code: str, user_id: str) -> dict:
@@ -75,7 +79,10 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
 
     inserted, skipped = 0, 0
     
+<<<<<<< HEAD
     
+=======
+>>>>>>> 4beb204 (feat: CAND-01 and CAND-02 complete - resume download, storage, and candidate extraction)
 
     for message_id in message_ids:
         parsed = await gmail_client.get_message(access_token, message_id)
@@ -83,8 +90,22 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
         if row:
             inserted += 1
             email_id = row["id"]
+<<<<<<< HEAD
             
             # trigger your AI pipeline
+=======
+
+            # handle resume attachment if present
+            if parsed.get("has_attachment"):
+                await process_resume_from_gmail(
+                    access_token=access_token,
+                    message_id=message_id,
+                    email_id=email_id,
+                    user_id=user_id
+                )
+
+            # trigger AI pipeline
+>>>>>>> 4beb204 (feat: CAND-01 and CAND-02 complete - resume download, storage, and candidate extraction)
             classify_and_save(email_id)
             check_and_save(email_id, user_id)
             generate_and_save(email_id)
