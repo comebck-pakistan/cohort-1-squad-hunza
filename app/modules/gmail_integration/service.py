@@ -7,6 +7,9 @@ from app.modules.gmail_integration.google_oauth import (
     exchange_code_for_gmail_tokens,
     refresh_gmail_access_token,
 )
+from tasks.classifier import classify_and_save
+from tasks.duplicate import check_and_save    
+from tasks.draft import generate_and_save
 
 
 async def handle_gmail_callback(code: str, user_id: str) -> dict:
@@ -71,12 +74,20 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
     message_ids = await gmail_client.list_message_ids(access_token, max_results=max_results)
 
     inserted, skipped = 0, 0
+    
+    
+
     for message_id in message_ids:
         parsed = await gmail_client.get_message(access_token, message_id)
         row = emails_repo.insert_email_if_new(user_id, parsed)
         if row:
             inserted += 1
+            email_id = row["id"]
+            
+            # trigger your AI pipeline
+            classify_and_save(email_id)
+            check_and_save(email_id, user_id)
+            generate_and_save(email_id)
         else:
-            skipped += 1  # already existed - safe to sync repeatedly
-
+            skipped += 1
     return {"checked": len(message_ids), "inserted": inserted, "skipped_existing": skipped}
