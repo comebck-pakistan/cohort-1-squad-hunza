@@ -42,6 +42,31 @@ async def get_message(access_token: str, message_id: str) -> dict:
         return _parse_message(resp.json())
 
 
+async def send_message(access_token: str, to: str, subject: str, body_text: str, thread_id: str | None = None) -> dict:
+    """Sends a reply via Gmail. Passing thread_id keeps it in the same Gmail conversation as the original email."""
+    raw = _build_raw_message(to=to, subject=subject, body_text=body_text)
+    payload = {"raw": raw}
+    if thread_id:
+        payload["threadId"] = thread_id
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            f"{GMAIL_API_BASE}/messages/send",
+            headers=_auth_header(access_token),
+            json=payload,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+def _build_raw_message(to: str, subject: str, body_text: str) -> str:
+    import email.mime.text
+    msg = email.mime.text.MIMEText(body_text)
+    msg["to"] = to
+    msg["subject"] = subject
+    return base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
+
+
 def _auth_header(access_token: str) -> dict:
     return {"Authorization": f"Bearer {access_token}"}
 
