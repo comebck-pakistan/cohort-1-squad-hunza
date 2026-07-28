@@ -12,7 +12,7 @@ from tasks.duplicate import check_and_save
 from tasks.draft import generate_and_save
 from tasks.resume import process_resume_from_gmail
 from rag.embedder import embed_and_save_email
-
+from tasks.queue import check_needs_attention
 
 
 async def handle_gmail_callback(code: str, user_id: str) -> dict:
@@ -100,6 +100,7 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
             classify_and_save(email_id)
             check_and_save(email_id, user_id)
             generate_and_save(email_id)
+            check_needs_attention(email_id, user_id)
             embed_and_save_email(email_id)
         else:
             skipped += 1
