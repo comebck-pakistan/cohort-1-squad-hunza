@@ -5,6 +5,8 @@ from app.core.config import get_settings
 from app.modules.auth.router import router as auth_router
 from app.modules.gmail_integration.router import router as gmail_router
 from app.modules.emails.router import router as emails_router
+from app.modules.drafts.router import router as drafts_router
+from app.modules.queue.router import router as queue_router
 
 settings = get_settings()
 
@@ -21,6 +23,8 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(gmail_router)
 app.include_router(emails_router)
+app.include_router(drafts_router)
+app.include_router(queue_router)
 
 
 @app.get("/health")
