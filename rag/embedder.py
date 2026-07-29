@@ -6,7 +6,7 @@ from database import get_db
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_MODEL_PATH = "sentence-transformers/all-MiniLM-L6-v2"
-HF_API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL_PATH}"
+HF_API_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL_PATH}/pipeline/feature-extraction"
 
 
 async def embed_text(text: str) -> list:
