@@ -107,26 +107,17 @@ def save_draft(email_id: str, draft_body: str) -> dict:
 
 def generate_and_save(email_id: str) -> dict:
     """
-    Main entry point - called by Celery worker.
-    Generates a draft reply and saves it to the database.
+    Generates and saves a draft reply.
+    Only called when HR explicitly requests it — not automatically.
+    Generated draft is saved it to the database.
     Returns the saved draft record.
     """
-    print(f"Generating draft for email {email_id}...")
-
-    # generate the draft
     draft_body = generate_draft(email_id)
-
     if not draft_body:
-        print(f"Draft generation failed for email {email_id}")
         return None
+    return save_draft(email_id, draft_body)
 
-    # save it to the database
-    saved_draft = save_draft(email_id, draft_body)
-
-    print(f"Draft generated and saved for email {email_id}")
-    print(f"Draft preview: {draft_body[:100]}...")
-
-    return saved_draft
+   
 
 
 if __name__ == "__main__":
