@@ -1,12 +1,17 @@
 import re
-from sentence_transformers import SentenceTransformer
+import os
+import httpx
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from config import EMBEDDING_MODEL, DUPLICATE_THRESHOLD
+import numpy as np
 from database import get_db
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_MODEL_PATH = "sentence-transformers/all-MiniLM-L6-v2"
+HF_API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL_PATH}"
 
 # load the embedding model once at module level
 # so it doesn't reload every time the function is called
-model = SentenceTransformer(EMBEDDING_MODEL)
 
 
 def get_job_posting_embeddings(user_id: str) -> list:
@@ -23,13 +28,25 @@ def get_job_posting_embeddings(user_id: str) -> list:
     return result.data if result.data else []
 
 
-def embed_text(text: str) -> list:
+
+
+async def embed_text(text: str) -> list:
     """
-    Converts a piece of text into a vector embedding.
+    Converts a piece of text into a vector embedding via HF Inference API.
     Returns a list of floats.
     """
-    embedding = model.encode(text)
-    return embedding.tolist()
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            HF_API_URL,
+            headers={"Authorization": f"Bearer {HF_TOKEN}"},
+            json={"inputs": text, "options": {"wait_for_model": True}}
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        if isinstance(result[0], list) and isinstance(result[0][0], list):
+            arr = np.array(result[0])
+            return arr.mean(axis=0).tolist()
+        return result
 
 
 def cosine_similarity(vec1: list, vec2: list) -> float:
@@ -90,7 +107,7 @@ def extract_questions_from_email(email_text: str) -> list:
     return questions if questions else [email_text.strip()]
 
 
-def is_duplicate_question(email_body: str, user_id: str) -> dict:
+async def is_duplicate_question(email_body: str, user_id: str) -> dict:
     """
     Checks if an email is asking something already answered
     in the job posting.
@@ -135,10 +152,10 @@ def is_duplicate_question(email_body: str, user_id: str) -> dict:
             continue
 
         # embed all chunks for this posting once
-        chunk_embeddings = [embed_text(chunk) for chunk in posting_chunks]
+        chunk_embeddings = [await embed_text(chunk) for chunk in posting_chunks]
 
         for question in questions:
-            question_embedding = embed_text(question)
+            question_embedding =await embed_text(question)
 
             for chunk, chunk_embedding in zip(posting_chunks, chunk_embeddings):
                 score = cosine_similarity(question_embedding, chunk_embedding)
@@ -160,14 +177,13 @@ def is_duplicate_question(email_body: str, user_id: str) -> dict:
     }
 
 
-def check_and_save(email_id: str, user_id: str):
+async def check_and_save(email_id: str, user_id: str):
     """
     Reads an email from the database, checks if it's a duplicate,
     and updates the email_categories table with the result.
     """
     db = get_db()
 
-    # fetch the email
     email_data = db.table("emails")\
         .select("*")\
         .eq("id", email_id)\
@@ -181,12 +197,10 @@ def check_and_save(email_id: str, user_id: str):
     email = email_data.data
     body = email.get("body_text", "")
 
-    # run duplicate check
-    result = is_duplicate_question(body, user_id)
+    result = await is_duplicate_question(body, user_id)
 
     print(f"Email {email_id} → Duplicate: {result['is_duplicate']} | Score: {result['similarity_score']}")
 
-    # update the email_categories table
     db.table("email_categories")\
         .update({
             "is_duplicate_question": result["is_duplicate"],
@@ -199,13 +213,12 @@ def check_and_save(email_id: str, user_id: str):
 
 
 if __name__ == "__main__":
-    # test manually with fake text
-    test_body = "Hi, I wanted to ask what the salary range is for this position?"
+    import asyncio
 
-    # use the user_id you inserted in Supabase
+    test_body = "Hi, I wanted to ask what the salary range is for this position?"
     test_user_id = "4abe83e2-0bca-465e-8aaa-eff3f3271a4a"
 
-    result = is_duplicate_question(test_body, test_user_id)
+    result = asyncio.run(is_duplicate_question(test_body, test_user_id))
     print(f"Is duplicate: {result['is_duplicate']}")
     print(f"Similarity score: {result['similarity_score']}")
     print(f"Matched posting: {result['matched_posting_id']}")
