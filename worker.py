@@ -2,6 +2,7 @@ from celery import Celery
 import os
 from dotenv import load_dotenv
 import ssl
+from celery.schedules import crontab
 
 load_dotenv()
 
@@ -28,6 +29,16 @@ celery_app.conf.update(
     },
 )
 
+
+celery_app.conf.beat_schedule = {
+    "renew-gmail-watches-daily": {
+        "task": "tasks.gmail_watch_renewal.renew_all_watches_task",
+        "schedule": crontab(hour=3, minute=0),
+    },
+}
+
+app = celery_app
+
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=5)
 def process_email_task(self, email_id: str, user_id: str):
     """
@@ -35,19 +46,18 @@ def process_email_task(self, email_id: str, user_id: str):
     Called by Dev 1's service.py instead of calling tasks directly.
     """
     try:
+        import asyncio
         from tasks.classifier import classify_and_save
         from tasks.duplicate import check_and_save
-        from tasks.draft import generate_and_save
         from tasks.queue import check_needs_attention
         from rag.embedder import embed_and_save_email
 
         print(f"Processing email {email_id}...")
 
         classify_and_save(email_id)
-        check_and_save(email_id, user_id)
-        generate_and_save(email_id)
         check_needs_attention(email_id, user_id)
-        embed_and_save_email(email_id)
+        asyncio.run(check_and_save(email_id, user_id))
+        asyncio.run(embed_and_save_email(email_id))
 
         print(f"Email {email_id} fully processed")
         return {"status": "success", "email_id": email_id}
