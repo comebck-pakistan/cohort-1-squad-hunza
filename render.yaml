@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: hr-agent-backend
+    runtime: python
+    branch: dev
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  - type: worker
+    name: hr-agent-celery-worker
+    runtime: python
+    branch: dev
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A worker worker --loglevel=info --pool=solo
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
