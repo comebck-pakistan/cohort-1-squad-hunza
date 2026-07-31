@@ -7,3 +7,9 @@ hrenv/
 # Ignore Python cache files
 __pycache__/
 *.pyc
+
+# Frontend (Next.js) ignores
+node_modules/
+.next/
+.env.local
+.env*.local
