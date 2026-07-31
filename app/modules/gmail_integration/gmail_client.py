@@ -164,3 +164,28 @@ def get_attachment_info(payload: dict) -> list[dict]:
         if part.get("parts"):
             attachments.extend(get_attachment_info(part))
     return attachments
+
+async def list_new_message_ids(access_token: str, start_history_id: str) -> list[str]:
+    """
+    Uses Gmail history.list to find message IDs added since start_history_id.
+    This is what makes Pub/Sub notifications useful — without this we'd
+    know something changed but not what.
+    """
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(
+            f"{GMAIL_API_BASE}/history",
+            headers=_auth_header(access_token),
+            params={
+                "startHistoryId": start_history_id,
+                "historyTypes": "messageAdded"
+            }
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    message_ids = []
+    for record in data.get("history", []):
+        for msg in record.get("messagesAdded", []):
+            message_ids.append(msg["message"]["id"])
+
+    return message_ids

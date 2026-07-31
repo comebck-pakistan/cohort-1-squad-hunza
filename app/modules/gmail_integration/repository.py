@@ -52,3 +52,23 @@ def reactivate_connection(connection_id: str, encrypted_refresh_token: str) -> d
 def set_active(connection_id: str, is_active: bool) -> None:
     db = get_supabase()
     db.table("gmail_connections").update({"is_active": is_active}).eq("id", connection_id).execute()
+
+
+def get_connection_by_address(gmail_address: str) -> dict | None:
+    """Find active connection by Gmail address — used by Pub/Sub webhook."""
+    db = get_supabase()
+    res = db.table("gmail_connections")\
+        .select("*")\
+        .eq("gmail_address", gmail_address)\
+        .eq("is_active", True)\
+        .single()\
+        .execute()
+    return res.data
+
+def update_history_id(connection_id: str, history_id: str) -> None:
+    """Updates the stored history_id after processing a Pub/Sub notification."""
+    db = get_supabase()
+    db.table("gmail_connections")\
+        .update({"history_id": history_id})\
+        .eq("id", connection_id)\
+        .execute()
