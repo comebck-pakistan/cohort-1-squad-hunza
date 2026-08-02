@@ -32,6 +32,21 @@ def decode_access_token(token: str) -> dict | None:
     except jwt.PyJWTError:
         return None
 
+def verify_supabase_token(token: str) -> dict | None:
+    """
+    Validates a Supabase-issued access token by asking Supabase directly.
+    Returns the user dict if valid, None if invalid/expired.
+    """
+    try:
+        from app.core.supabase_client import get_supabase
+        supabase = get_supabase()
+        response = supabase.auth.get_user(token)
+        if response and response.user:
+            return {"id": response.user.id, "email": response.user.email}
+        return None
+    except Exception:
+        return None
+
 
 # ---------- Refresh token (opaque random string, hashed at rest) ----------
 # The raw token is only ever seen by the client. We store SHA-256(raw) so a DB

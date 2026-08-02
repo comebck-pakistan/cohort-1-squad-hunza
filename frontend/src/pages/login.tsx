@@ -27,9 +27,6 @@ export default function Login() {
     }
   };
 
-  const handleDemoBypass = () => {
-    router.push('/dashboard');
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#EFE9DE] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-100/60 via-[#EFE9DE] to-[#E5DEC9]">
@@ -67,13 +64,6 @@ export default function Login() {
             <ArrowRight className="w-4 h-4 text-amber-400 group-hover:translate-x-1 transition-transform" />
           </button>
 
-          <button
-            onClick={handleDemoBypass}
-            className="w-full bg-[#EFE9DE] hover:bg-[#E4DCCF] text-zinc-700 font-semibold py-2.5 px-4 rounded-2xl text-xs transition-colors flex items-center justify-center gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Enter Demo Mode Directly</span>
-          </button>
         </div>
 
         {/* Footer text */}

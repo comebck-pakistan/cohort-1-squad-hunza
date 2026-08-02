@@ -50,7 +50,7 @@ export default function Onboarding() {
     setNewRoleInput('');
   };
 
-  const handleFinishSetup = () => {
+  const handleFinishSetup = async () => {
     updateOnboarding({
       completed: true,
       categories: selectedCategories,

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Layout from '../components/Layout';
+import { useRouter } from 'next/router';
+import { supabase } from '../lib/supabase';
 import { useAppState } from '../context/AppStateContext';
-import { CHART_VOLUME_DATA, CHART_30DAY_VOLUME_DATA } from '../lib/mockData';
 import {
   BarChart,
   Bar,
@@ -25,19 +26,84 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
+  const router = useRouter();
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const { emails, candidates } = useAppState();
   const [timeRange, setTimeRange] = useState<'7days' | '30days'>('7days');
 
-  const activeChartData = timeRange === '7days' ? CHART_VOLUME_DATA : CHART_30DAY_VOLUME_DATA;
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+      if (!session) router.push('/login');
+    });
 
-  const emailsTodayCount = emails.length + 18; // Simulated total
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (!session) router.push('/login');
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
+
+  const activeChartData = useMemo(() => {
+    const normalized = emails.map((email) => ({
+      receivedAt: email.receivedAtRaw ? new Date(email.receivedAtRaw) : new Date(),
+      category: email.category || 'General Inquiry',
+    }));
+
+    const dateBuckets: Record<string, { Applicants: number; Interviews: number; Inquiries: number; Spam: number }> = {};
+    const today = new Date();
+
+    const bucketLabel = (date: Date) => {
+      if (timeRange === '7days') {
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+      }
+      const weekNumber = Math.floor((date.getDate() - 1) / 7) + 1;
+      return `W${weekNumber}`;
+    };
+
+    normalized.forEach((item) => {
+      const label = bucketLabel(item.receivedAt);
+      dateBuckets[label] ??= { Applicants: 0, Interviews: 0, Inquiries: 0, Spam: 0 };
+      if (item.category === 'New Applicant') {
+        dateBuckets[label].Applicants += 1;
+      } else if (item.category === 'Interview Scheduling' || item.category === 'Interview Reschedule') {
+        dateBuckets[label].Interviews += 1;
+      } else if (item.category === 'Spam') {
+        dateBuckets[label].Spam += 1;
+      } else {
+        dateBuckets[label].Inquiries += 1;
+      }
+    });
+
+    const labels = timeRange === '7days'
+      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      : ['W1', 'W2', 'W3', 'W4'];
+
+    return labels.map((label) => ({
+      day: label,
+      Applicants: dateBuckets[label]?.Applicants ?? 0,
+      Interviews: dateBuckets[label]?.Interviews ?? 0,
+      Inquiries: dateBuckets[label]?.Inquiries ?? 0,
+      Spam: dateBuckets[label]?.Spam ?? 0,
+    }));
+  }, [emails, timeRange]);
+
+  const emailsTodayCount = emails.length;
   const pendingDrafts = emails.filter((e) => e.draftReply && e.draftReply.status === 'pending');
-  const newApplicantsCount = candidates.length + 4;
-  const spamFilteredCount = emails.filter((e) => e.category === 'Spam').length + 2;
+  const newApplicantsCount = candidates.length;
+  const spamFilteredCount = emails.filter((e) => e.category === 'Spam').length;
 
   const needsAttentionEmails = emails.filter(
     (e) => e.priority === 'High' && e.status !== 'Approved & Sent'
   );
+
+  if (loading) return <div>Loading...</div>;
+  if (!session) return null;
 
   return (
     <Layout>

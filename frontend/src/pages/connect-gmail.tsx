@@ -1,23 +1,54 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Mail, CheckCircle2, ShieldCheck, ArrowRight, Lock } from 'lucide-react';
 import { useAppState } from '../context/AppStateContext';
+import { apiService } from '../lib/api';
 
 export default function ConnectGmail() {
   const router = useRouter();
-  const { setGmailConnected } = useAppState();
+  const { setGmailConnected, showToast } = useAppState();
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
 
   const handleConnectGmail = async () => {
     setConnecting(true);
-    // Simulate API call to GET /auth/gmail/connect
-    setTimeout(() => {
+    try {
+      const result = await apiService.connectGmail();
+      if (result?.authorization_url) {
+        window.location.href = result.authorization_url;
+        return;
+      }
+      throw new Error('Missing authorization URL');
+    } catch (err) {
+      console.error('Gmail connect failed', err);
+      showToast('Unable to start Gmail OAuth. Please try again.');
+    } finally {
       setConnecting(false);
-      setConnected(true);
-      setGmailConnected(true);
-    }, 800);
+    }
   };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadStatus = async () => {
+      try {
+        const result = await apiService.getGmailStatus();
+        if (mounted) {
+          const isConnected = Array.isArray(result) && result.length > 0;
+          setConnected(isConnected);
+          setGmailConnected(isConnected);
+        }
+      } catch (err) {
+        console.error('Failed to load Gmail status', err);
+      }
+    };
+
+    loadStatus();
+
+    return () => {
+      mounted = false;
+    };
+  }, [setGmailConnected]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#EFE9DE]">

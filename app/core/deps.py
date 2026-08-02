@@ -19,22 +19,23 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> dict:
     """
-    Validates the JWT access token in-process (no DB hit) and returns
-    {"id": ..., "email": ...}. Use as: Depends(get_current_user).
+    Validates the Supabase-issued access token by verifying with Supabase directly.
+    Returns {"id": ..., "email": ...}. Use as: Depends(get_current_user).
     """
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing bearer token. Click 'Authorize' in Swagger and paste your access_token.",
+            detail="Missing bearer token.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    payload = decode_access_token(credentials.credentials)
-    if payload is None:
+    from app.core.security import verify_supabase_token
+    user = verify_supabase_token(credentials.credentials)
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return {"id": payload["sub"], "email": payload["email"]}
+    return user
