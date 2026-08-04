@@ -35,8 +35,7 @@ async def gmail_callback(request: Request, code: str, state: str):
 
     await service.handle_gmail_callback(code=code, user_id=user_id)
 
-    return RedirectResponse(f"{settings.FRONTEND_URL}/settings/gmail?connected=true")
-
+    return RedirectResponse(f"{settings.FRONTEND_URL}/settings?connected=true")
 
 @router.get("/status", response_model=list[GmailConnectionOut])
 async def gmail_status(current_user: dict = Depends(get_current_user)):

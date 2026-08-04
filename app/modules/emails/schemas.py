@@ -12,3 +12,5 @@ class EmailOut(BaseModel):
     received_at: str | None = None
     has_attachment: bool = False
     is_processed: bool = False
+    category: str | None = None
+    priority: str | None = None

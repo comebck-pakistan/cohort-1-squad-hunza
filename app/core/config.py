@@ -29,8 +29,7 @@ class Settings(BaseSettings):
 
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
-    FRONTEND_OAUTH_SUCCESS_PATH: str = "/auth/callback"
-
+    FRONTEND_OAUTH_SUCCESS_PATH: str = "/auth/callback.html"
     ENVIRONMENT: str = "development"  # development | staging | production
 
 

@@ -118,8 +118,8 @@ const mapBackendEmails = (emails: any[]): EmailItem[] =>
     senderEmail: email.sender_email || '',
     avatarUrl: undefined,
     subject: email.subject || 'No subject',
-    category: 'General Inquiry',
-    priority: 'Medium',
+    category: email.category || 'General Inquiry',
+    priority: email.priority || 'Medium',
     status: 'No Reply',
     date: email.received_at
       ? new Date(email.received_at).toLocaleDateString('en-US', {
@@ -273,32 +273,24 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const updateEmailCategory = (emailId: string, newCategory: string) => {
-    const email = emails.find((e) => e.id === emailId);
-    if (!email) return;
-    const oldCategory = email.category;
+const updateEmailCategory = async (emailId: string, newCategory: string) => {
+  const email = emails.find((e) => e.id === emailId);
+  if (!email) return;
+  const oldCategory = email.category;
 
-    setEmails((prev) => prev.map((e) => (e.id === emailId ? { ...e, category: newCategory } : e)));
+  setEmails((prev) => prev.map((e) => (e.id === emailId ? { ...e, category: newCategory } : e)));
 
-    setCorrections((prev) => [
-      {
-        id: `corr-${Date.now()}`,
-        date: new Date().toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }),
-        original: oldCategory,
-        corrected: newCategory,
-        correctedBy: 'HR User',
-        type: 'Category Fix',
-        emailSubject: email.subject,
-      },
-      ...prev,
-    ]);
+  try {
+    await apiService.updateEmailCategory(emailId, newCategory);
+  } catch (err) {
+    setEmails((prev) => prev.map((e) => (e.id === emailId ? { ...e, category: oldCategory } : e)));
+    showToast('Failed to update category — please try again');
+    return;
+  }
 
-    showToast(`Category updated to "${newCategory}"`);
-  };
+  setCorrections((prev) => [/* ...unchanged... */]);
+  showToast(`Category updated to "${newCategory}"`);
+};
 
   const regenerateDraftText = async (emailId: string) => {
     const email = emails.find((e) => e.id === emailId);

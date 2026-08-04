@@ -15,17 +15,46 @@ def get_user_by_id(user_id: str) -> dict | None:
     return res.data[0] if res.data else None
 
 
-def create_user(email: str, full_name: str | None) -> dict:
+def create_user(email: str, full_name: str | None, user_id: str | None = None) -> dict:
     db = get_supabase()
-    res = db.table("users").insert({"email": email, "full_name": full_name}).execute()
+    payload = {"email": email, "full_name": full_name}
+    if user_id:
+        payload["id"] = user_id
+    res = db.table("users").insert(payload).execute()
     return res.data[0]
-
 
 def get_or_create_user(email: str, full_name: str | None) -> dict:
     user = get_user_by_email(email)
     if user:
         return user
     return create_user(email, full_name)
+
+
+
+def get_or_create_user_by_auth_id(auth_id: str, email: str, full_name: str | None = None) -> dict:
+    """
+    Ensures a public.users row exists with id == auth_id (the Supabase Auth
+    user id from the JWT 'sub' claim). Call this from get_current_user so
+    every authenticated request self-heals the row.
+
+    Handles three cases:
+    1. Row already exists with this id -> return it.
+    2. A row exists with this email but a different id (e.g. created by the
+       old custom-JWT login flow with a random id) -> migrate its id to
+       match auth_id, so future FK references line up.
+    3. No row at all -> create one with id explicitly set to auth_id.
+    """
+    user = get_user_by_id(auth_id)
+    if user:
+        return user
+
+    existing_by_email = get_user_by_email(email)
+    if existing_by_email:
+        db = get_supabase()
+        res = db.table("users").update({"id": auth_id}).eq("id", existing_by_email["id"]).execute()
+        return res.data[0] if res.data else existing_by_email
+
+    return create_user(email, full_name, user_id=auth_id)
 
 
 def store_refresh_token(

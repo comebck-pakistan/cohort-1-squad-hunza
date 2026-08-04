@@ -27,15 +27,16 @@ def list_connections_for_user(user_id: str) -> list[dict]:
 
 
 def create_connection(user_id: str, gmail_address: str, encrypted_refresh_token: str) -> dict:
+    from datetime import datetime, timezone
     db = get_supabase()
     res = db.table("gmail_connections").insert({
         "user_id": user_id,
         "gmail_address": gmail_address,
         "refresh_token": encrypted_refresh_token,
         "is_active": True,
+        "connected_at": datetime.now(timezone.utc).isoformat(),
     }).execute()
     return res.data[0]
-
 
 def reactivate_connection(connection_id: str, encrypted_refresh_token: str) -> dict:
     """Reconnecting an existing (possibly previously disconnected) mailbox refreshes its token."""

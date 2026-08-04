@@ -38,4 +38,12 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return user
+    from app.modules.auth.repository import get_user_by_id
+    db_user = get_user_by_id(user["id"])
+    if db_user is None:
+        # First time we've seen this auth id (or migration hasn't run yet) -
+        # fall back to the full self-healing sync just this once.
+        from app.modules.auth.repository import get_or_create_user_by_auth_id
+        db_user = get_or_create_user_by_auth_id(auth_id=user["id"], email=user["email"])
+
+    return {"id": db_user["id"], "email": db_user["email"]}
