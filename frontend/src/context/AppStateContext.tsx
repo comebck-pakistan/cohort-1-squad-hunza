@@ -62,6 +62,7 @@ interface OnboardingState {
 interface AppStateContextType {
   isGmailConnected: boolean;
   setGmailConnected: (val: boolean) => void;
+  gmailAddress: string | null;
   onboarding: OnboardingState;
   updateOnboarding: (data: Partial<OnboardingState>) => void;
   emails: EmailItem[];
@@ -134,12 +135,12 @@ const mapBackendEmails = (emails: any[]): EmailItem[] =>
 
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isGmailConnected, setGmailConnected] = useState<boolean>(false);
+  const [gmailAddress, setGmailAddress] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [jobRoles, setJobRoles] = useState<string[]>(DEFAULT_ROLES);
   const [emails, setEmails] = useState<EmailItem[]>([]);
   const [candidates, setCandidates] = useState<CandidateItem[]>([]);
   const [corrections, setCorrections] = useState<CorrectionLogItem[]>([]);
-
   const [onboarding, setOnboarding] = useState<OnboardingState>({
     completed: false,
     categories: DEFAULT_CATEGORIES,
@@ -371,6 +372,9 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
 
         setEmails(mapBackendEmails(Array.isArray(emailsData) ? emailsData : []));
         setGmailConnected(Array.isArray(gmailStatus) && gmailStatus.length > 0);
+
+        const activeConnection = Array.isArray(gmailStatus) ? gmailStatus.find((c: any) => c.is_active) : null;
+        setGmailAddress(activeConnection?.gmail_address || null);
       } catch (err) {
         console.error('Failed to load app state', err);
         showToast('Unable to load backend email state.');
@@ -400,10 +404,11 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
   }, []);
 
   return (
-    <AppStateContext.Provider
+   <AppStateContext.Provider
       value={{
         isGmailConnected,
         setGmailConnected,
+        gmailAddress,
         onboarding,
         updateOnboarding,
         emails,

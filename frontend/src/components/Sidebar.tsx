@@ -18,10 +18,14 @@ import { useAppState } from '../context/AppStateContext';
 
 export default function Sidebar() {
   const router = useRouter();
-  const { emails, isGmailConnected } = useAppState();
+  const { emails, isGmailConnected, gmailAddress } = useAppState();
 
   const pendingDraftsCount = emails.filter((e) => e.draftReply && e.draftReply.status === 'pending').length;
   const highPriorityCount = emails.filter((e) => e.priority === 'High' && e.status !== 'Approved & Sent').length;
+
+  const displayName = gmailAddress
+    ? gmailAddress.split('@')[0].charAt(0).toUpperCase() + gmailAddress.split('@')[0].slice(1)
+    : 'Connected User';
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -42,7 +46,7 @@ export default function Sidebar() {
             S
           </div>
           <div>
-            <h1 className="font-extrabold text-lg tracking-tight text-zinc-900">Sortdesk HR</h1>
+            <h1 className="font-extrabold text-lg tracking-tight text-zinc-900">{displayName} HR</h1>
             <p className="text-xs text-zinc-500 font-medium flex items-center gap-1">
               <span className={`w-2 h-2 rounded-full ${isGmailConnected ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
               {isGmailConnected ? 'Gmail Sync Active' : 'Gmail Disconnected'}
@@ -116,9 +120,7 @@ export default function Sidebar() {
               className="w-9 h-9 rounded-full object-cover border-2 border-amber-300 shadow-sm"
             />
             <div>
-              <p className="text-xs font-bold text-zinc-900">
-                {emails[0]?.userEmail || 'Connected User'}
-              </p>
+              <p className="text-xs font-bold text-zinc-900">{displayName}</p>
               <p className="text-[10px] text-zinc-500 font-medium">Head of Recruiting</p>
             </div>
             
