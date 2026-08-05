@@ -10,7 +10,7 @@ from app.modules.gmail_integration.google_oauth import (
 from tasks.classifier import classify_and_save
 from tasks.duplicate import check_and_save    
 from tasks.resume import process_resume_from_gmail
-from rag.embedder import embed_and_save_email
+from worker import process_email_task
 from tasks.queue import check_needs_attention
 
 
@@ -99,7 +99,7 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
             classify_and_save(email_id)
             await check_and_save(email_id, user_id)
             check_needs_attention(email_id, user_id)
-            await embed_and_save_email(email_id)
+            # process_email_task.delay(email_id, user_id)  NEED TO BE UNCOMMENTED LATER WHILE DEPLOYMENT
         else:
             skipped += 1
     return {"checked": len(message_ids), "inserted": inserted, "skipped_existing": skipped}

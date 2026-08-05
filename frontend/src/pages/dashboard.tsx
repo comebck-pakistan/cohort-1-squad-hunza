@@ -111,10 +111,10 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">
-            Welcome in, Sortdesk <span className="text-amber-500 font-normal">👋</span>
+            Welcome in, {session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || 'User'} <span className="text-amber-500 font-normal">👋</span>
           </h1>
           <p className="text-xs text-zinc-500 font-semibold mt-1">
-            Recruitment inbox analytics & pending AI draft approvals for Sarah Jenkins
+            Recruitment inbox analytics & pending AI draft approvals for {session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || 'User'}
           </p>
         </div>
 
@@ -183,7 +183,7 @@ export default function Dashboard() {
           <div className="mt-4 flex items-baseline justify-between">
             <span className="text-3xl font-extrabold text-zinc-900">{newApplicantsCount}</span>
             <span className="text-xs font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">
-              8 this week
+            
             </span>
           </div>
         </div>

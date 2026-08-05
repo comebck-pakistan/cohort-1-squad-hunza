@@ -116,9 +116,12 @@ export default function Sidebar() {
               className="w-9 h-9 rounded-full object-cover border-2 border-amber-300 shadow-sm"
             />
             <div>
-              <p className="text-xs font-bold text-zinc-900">Sarah Jenkins</p>
+              <p className="text-xs font-bold text-zinc-900">
+                {emails[0]?.userEmail || 'Connected User'}
+              </p>
               <p className="text-[10px] text-zinc-500 font-medium">Head of Recruiting</p>
             </div>
+            
           </div>
           <button
             onClick={() => router.push('/login')}
