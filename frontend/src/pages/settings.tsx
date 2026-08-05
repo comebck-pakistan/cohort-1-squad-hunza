@@ -24,6 +24,7 @@ export default function SettingsPage() {
     removeJobRole,
     isGmailConnected,
     setGmailConnected,
+    gmailAddress,
     onboarding,
     updateOnboarding,
     showToast,
@@ -170,7 +171,7 @@ export default function SettingsPage() {
           <div className="p-4 bg-[#EFE9DE]/60 border border-[#E8E1D2] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="text-xs font-extrabold text-zinc-900">Connected Account:</p>
-              <p className="text-xs text-zinc-600 font-mono font-semibold">sarah.jenkins@crextio.hr</p>
+              <p className="text-xs text-zinc-600 font-mono font-semibold">{gmailAddress || 'Not connected'}</p>
             </div>
 
             {isGmailConnected ? (
