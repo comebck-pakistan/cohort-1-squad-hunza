@@ -11,7 +11,8 @@ export default function ConnectGmail() {
   const [connected, setConnected] = useState(false);
 
   const handleConnectGmail = async () => {
-    setConnecting(true);
+  console.log('BUTTON CLICKED - handleConnectGmail fired');
+  setConnecting(true);
     try {
       const result = await apiService.connectGmail();
       if (result?.authorization_url) {
