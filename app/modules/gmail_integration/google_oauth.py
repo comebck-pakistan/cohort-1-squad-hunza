@@ -61,5 +61,7 @@ async def refresh_gmail_access_token(refresh_token: str) -> dict:
                 "grant_type": "refresh_token",
             },
         )
+        if resp.status_code != 200:
+            print(f"GOOGLE TOKEN REFRESH FAILED: {resp.status_code} - {resp.text}")
         resp.raise_for_status()
-        return resp.json()  # {access_token, expires_in, scope, token_type}
+        return resp.json()
