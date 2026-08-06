@@ -62,9 +62,10 @@ def get_connection_by_address(gmail_address: str) -> dict | None:
         .select("*")\
         .eq("gmail_address", gmail_address)\
         .eq("is_active", True)\
-        .single()\
+        .order("connected_at", desc=True)\
+        .limit(1)\
         .execute()
-    return res.data
+    return res.data[0] if res.data else None
 
 def update_history_id(connection_id: str, history_id: str) -> None:
     """Updates the stored history_id after processing a Pub/Sub notification."""
