@@ -130,22 +130,16 @@ async def start_watch(connection_id: str, user_id: str) -> dict:
     return result
 
 
-async def handle_pubsub_notification(body: dict) -> None:
-    """
-    INGEST-01: Decodes a Pub/Sub push notification and fetches
-    new emails using Gmail's history.list API.
-    """
+async def handle_pubsub_notification(body: dict, background_tasks) -> None:
     import base64
     import json
 
-    # decode the Pub/Sub message
     message = body.get("message", {})
     data = message.get("data", "")
     
     if not data:
         return
 
-    # decode base64 message data
     decoded = base64.urlsafe_b64decode(data + "==").decode("utf-8")
     notification = json.loads(decoded)
 
@@ -155,7 +149,6 @@ async def handle_pubsub_notification(body: dict) -> None:
     if not email_address or not history_id:
         return
 
-    # find the connected account
     connection = repo.get_connection_by_address(email_address)
     if not connection or not connection.get("is_active"):
         return
@@ -163,25 +156,20 @@ async def handle_pubsub_notification(body: dict) -> None:
     user_id = connection["user_id"]
     connection_id = connection["id"]
 
-    # get fresh access token
     refresh_token = decrypt(connection["refresh_token"])
     google_tokens = await refresh_gmail_access_token(refresh_token)
     access_token = google_tokens["access_token"]
 
-    # get previous history_id stored from last sync
     last_history_id = connection.get("history_id")
 
     if not last_history_id:
-        # first notification — just store history_id and wait for next one
         repo.update_history_id(connection_id, history_id)
         return
 
-    # fetch new messages since last history_id
     new_message_ids = await gmail_client.list_new_message_ids(
         access_token, last_history_id
     )
 
-    # process each new email
     inserted = 0
     for message_id in new_message_ids:
         parsed = await gmail_client.get_message(access_token, message_id)
@@ -198,10 +186,18 @@ async def handle_pubsub_notification(body: dict) -> None:
                     user_id=user_id
                 )
 
-            # trigger AI pipeline
-            from worker import process_email_task
-            process_email_task.delay(email_id, user_id)
+            # run fast tasks synchronously
+            from tasks.classifier import classify_and_save
+            from tasks.duplicate import check_and_save
+            from tasks.queue import check_needs_attention
+            from rag.embedder import embed_and_save_email
 
-    # update stored history_id for next notification
+            classify_and_save(email_id)
+            check_needs_attention(email_id, user_id)
+            await check_and_save(email_id, user_id)
+
+            # run slow embedding in background after webhook returns 200
+            background_tasks.add_task(embed_and_save_email, email_id)
+
     repo.update_history_id(connection_id, history_id)
     print(f"Pub/Sub webhook: processed {inserted} new emails for {email_address}")

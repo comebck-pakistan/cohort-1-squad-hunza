@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks, status
 from fastapi.responses import RedirectResponse
 
 from app.core.config import get_settings
@@ -58,13 +58,8 @@ async def gmail_sync(connection_id: str, current_user: dict = Depends(get_curren
     return await service.sync_now(connection_id, current_user["id"])
 
 @router.post("/pubsub/webhook")
-async def gmail_pubsub_webhook(request: Request):
-    """
-    INGEST-01: Google Cloud Pub/Sub pushes a notification to this endpoint
-    whenever a new email arrives in any connected mailbox.
-    No auth header - Google calls this directly, secured by the push
-    subscription's URL being secret enough.
-    """
+async def gmail_pubsub_webhook(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
-    await service.handle_pubsub_notification(body)
+    await service.handle_pubsub_notification(body, background_tasks)
     return {"status": "ok"}
+
