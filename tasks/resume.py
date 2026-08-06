@@ -70,7 +70,7 @@ async def process_resume_from_gmail(
     )
 
     # get public URL
-    file_url = db.storage.from_("resumes").get_public_url(storage_path)
+    file_url = db.storage.from_("Resumes").get_public_url(storage_path)
 
     # save to candidate_documents table
     db.table("candidate_documents").insert({
