@@ -109,15 +109,9 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
 
 
 GMAIL_PUBSUB_TOPIC = os.environ["PUBSUB_TOPIC"]  # e.g. projects/YOUR_PROJECT_ID/topics/gmail-notifications
-
+print(f"Using PUBSUB_TOPIC: {GMAIL_PUBSUB_TOPIC}")
 
 async def start_watch(connection_id: str, user_id: str) -> dict:
-    """
-    Tells Gmail to start sending Pub/Sub push notifications for this mailbox.
-    Called right after a Gmail connection is created/reactivated. Stores the
-    returned historyId as our baseline for the next Pub/Sub-triggered
-    history.list call in handle_pubsub_notification.
-    """
     connection = repo.get_connection_by_id(connection_id)
     if not connection or connection["user_id"] != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Gmail connection not found")
@@ -127,6 +121,7 @@ async def start_watch(connection_id: str, user_id: str) -> dict:
     access_token = google_tokens["access_token"]
 
     result = await gmail_client.watch(access_token, GMAIL_PUBSUB_TOPIC)
+    print(f"WATCH RESULT for {connection['gmail_address']}: {result}")
 
     history_id = str(result.get("historyId", ""))
     if history_id:
