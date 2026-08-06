@@ -1,3 +1,4 @@
+import os
 from fastapi import HTTPException, status
 
 from app.core.crypto import decrypt, encrypt
@@ -43,8 +44,9 @@ async def handle_gmail_callback(code: str, user_id: str) -> dict:
         connection = repo.reactivate_connection(existing["id"], encrypted)
     else:
         connection = repo.create_connection(user_id, gmail_address, encrypted)
-
+    await start_watch(connection["id"], user_id)
     return connection
+
 
 
 def disconnect(connection_id: str, user_id: str) -> None:
@@ -103,6 +105,35 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
         else:
             skipped += 1
     return {"checked": len(message_ids), "inserted": inserted, "skipped_existing": skipped}
+
+
+
+GMAIL_PUBSUB_TOPIC = os.environ["PUBSUB_TOPIC"]  # e.g. projects/YOUR_PROJECT_ID/topics/gmail-notifications
+
+
+async def start_watch(connection_id: str, user_id: str) -> dict:
+    """
+    Tells Gmail to start sending Pub/Sub push notifications for this mailbox.
+    Called right after a Gmail connection is created/reactivated. Stores the
+    returned historyId as our baseline for the next Pub/Sub-triggered
+    history.list call in handle_pubsub_notification.
+    """
+    connection = repo.get_connection_by_id(connection_id)
+    if not connection or connection["user_id"] != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Gmail connection not found")
+
+    refresh_token = decrypt(connection["refresh_token"])
+    google_tokens = await refresh_gmail_access_token(refresh_token)
+    access_token = google_tokens["access_token"]
+
+    result = await gmail_client.watch(access_token, GMAIL_PUBSUB_TOPIC)
+
+    history_id = str(result.get("historyId", ""))
+    if history_id:
+        repo.update_history_id(connection_id, history_id)
+
+    return result
+
 
 async def handle_pubsub_notification(body: dict) -> None:
     """

@@ -189,3 +189,25 @@ async def list_new_message_ids(access_token: str, start_history_id: str) -> list
             message_ids.append(msg["message"]["id"])
 
     return message_ids
+
+async def watch(access_token: str, topic_name: str) -> dict:
+    """
+    Registers this mailbox with Gmail's push notification system, pointed at
+    our Pub/Sub topic. Must be renewed periodically - Google says watches
+    expire after 7 days, so this needs re-calling (e.g. via a daily Celery
+    beat task) or notifications silently stop.
+    Returns {historyId, expiration} on success.
+    """
+    payload = {
+        "topicName": topic_name,
+        "labelIds": ["INBOX"],
+        "labelFilterAction": "include",
+    }
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.post(
+            f"{GMAIL_API_BASE}/watch",
+            headers=_auth_header(access_token),
+            json=payload,
+        )
+        resp.raise_for_status()
+        return resp.json()
