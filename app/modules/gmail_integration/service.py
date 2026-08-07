@@ -135,66 +135,77 @@ async def handle_pubsub_notification(body: dict, background_tasks) -> None:
     import base64
     import json
 
-    message = body.get("message", {})
-    data = message.get("data", "")
-    
-    if not data:
-        return
-
-    decoded = base64.urlsafe_b64decode(data + "==").decode("utf-8")
-    notification = json.loads(decoded)
-
-    email_address = notification.get("emailAddress")
-    history_id = str(notification.get("historyId", ""))
-
-    if not email_address or not history_id:
-        return
-
-    connection = repo.get_connection_by_address(email_address)
-    if not connection or not connection.get("is_active"):
-        return
-
-    user_id = connection["user_id"]
-    connection_id = connection["id"]
-
-    refresh_token = decrypt(connection["refresh_token"])
-    google_tokens = await refresh_gmail_access_token(refresh_token)
-    access_token = google_tokens["access_token"]
-
-    last_history_id = connection.get("history_id")
-
-    if not last_history_id:
-        repo.update_history_id(connection_id, history_id)
-        return
-
-    new_message_ids = await gmail_client.list_new_message_ids(
-        access_token, last_history_id
-    )
-
-    inserted = 0
-    for message_id in new_message_ids:
-        try:
-            parsed = await gmail_client.get_message(access_token, message_id)
-        except Exception as e:
-            print(f"Skipping message {message_id}: {e}")
-            continue
+    try:
+        message = body.get("message", {})
+        data = message.get("data", "")
         
-        row = emails_repo.insert_email_if_new(user_id, parsed)
-        if row:
-            inserted += 1
-            email_id = row["id"]
+        if not data:
+            return
 
-            if parsed.get("has_attachment"):
-                await process_resume_from_gmail(
-                    access_token=access_token,
-                    message_id=message_id,
-                    email_id=email_id,
-                    user_id=user_id
-                )
+        decoded = base64.urlsafe_b64decode(data + "==").decode("utf-8")
+        notification = json.loads(decoded)
 
-            classify_and_save(email_id)
-            check_needs_attention(email_id, user_id)
-            await check_and_save(email_id, user_id)
-            background_tasks.add_task(embed_and_save_email, email_id)
+        email_address = notification.get("emailAddress")
+        history_id = str(notification.get("historyId", ""))
+
+        if not email_address or not history_id:
+            return
+
+        connection = repo.get_connection_by_address(email_address)
+        if not connection or not connection.get("is_active"):
+            return
+
+        user_id = connection["user_id"]
+        connection_id = connection["id"]
+
+        try:
+            refresh_token = decrypt(connection["refresh_token"])
+            google_tokens = await refresh_gmail_access_token(refresh_token)
+            access_token = google_tokens["access_token"]
+        except Exception as e:
+            print(f"Token refresh failed for {email_address}: {e}")
+            repo.set_active(connection_id, is_active=False)
+            return
+
+        last_history_id = connection.get("history_id")
+
+        if not last_history_id:
+            repo.update_history_id(connection_id, history_id)
+            return
+
+        new_message_ids = await gmail_client.list_new_message_ids(
+            access_token, last_history_id
+        )
+
+        inserted = 0
+        for message_id in new_message_ids:
+            try:
+                parsed = await gmail_client.get_message(access_token, message_id)
+            except Exception as e:
+                print(f"Skipping message {message_id}: {e}")
+                continue
+            
+            row = emails_repo.insert_email_if_new(user_id, parsed)
+            if row:
+                inserted += 1
+                email_id = row["id"]
+
+                if parsed.get("has_attachment"):
+                    await process_resume_from_gmail(
+                        access_token=access_token,
+                        message_id=message_id,
+                        email_id=email_id,
+                        user_id=user_id
+                    )
+
+                classify_and_save(email_id)
+                check_needs_attention(email_id, user_id)
+                await check_and_save(email_id, user_id)
+                background_tasks.add_task(embed_and_save_email, email_id)
+
         repo.update_history_id(connection_id, history_id)
         print(f"Pub/Sub webhook: processed {inserted} new emails for {email_address}")
+
+    except Exception as e:
+        print(f"Webhook error (non-fatal): {e}")
+        return
