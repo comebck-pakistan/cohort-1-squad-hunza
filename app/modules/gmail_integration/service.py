@@ -13,6 +13,7 @@ from tasks.duplicate import check_and_save
 from tasks.resume import process_resume_from_gmail
 from worker import process_email_task
 from tasks.queue import check_needs_attention
+from rag.embedder import embed_and_save_email
 
 
 async def handle_gmail_callback(code: str, user_id: str) -> dict:
@@ -178,28 +179,20 @@ async def handle_pubsub_notification(body: dict, background_tasks) -> None:
             print(f"Skipping message {message_id}: {e}")
             continue
         
-    row = emails_repo.insert_email_if_new(user_id, parsed)
-    if row:
-        inserted += 1
-        email_id = row["id"]
+        row = emails_repo.insert_email_if_new(user_id, parsed)
+        if row:
+            inserted += 1
+            email_id = row["id"]
 
-        if parsed.get("has_attachment"):
-            await process_resume_from_gmail(
-                access_token=access_token,
-                message_id=message_id,
-                email_id=email_id,
-                user_id=user_id
-            )
+            if parsed.get("has_attachment"):
+                await process_resume_from_gmail(
+                    access_token=access_token,
+                    message_id=message_id,
+                    email_id=email_id,
+                    user_id=user_id
+                )
 
-        from tasks.classifier import classify_and_save
-        from tasks.duplicate import check_and_save
-        from tasks.queue import check_needs_attention
-        from rag.embedder import embed_and_save_email
-
-        classify_and_save(email_id)
-        check_needs_attention(email_id, user_id)
-        await check_and_save(email_id, user_id)
-        background_tasks.add_task(embed_and_save_email, email_id)
-
-    repo.update_history_id(connection_id, history_id)
-    print(f"Pub/Sub webhook: processed {inserted} new emails for {email_address}")
+            classify_and_save(email_id)
+            check_needs_attention(email_id, user_id)
+            await check_and_save(email_id, user_id)
+            background_tasks.add_task(embed_and_save_email, email_id)
