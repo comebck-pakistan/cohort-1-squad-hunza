@@ -196,3 +196,5 @@ async def handle_pubsub_notification(body: dict, background_tasks) -> None:
             check_needs_attention(email_id, user_id)
             await check_and_save(email_id, user_id)
             background_tasks.add_task(embed_and_save_email, email_id)
+        repo.update_history_id(connection_id, history_id)
+        print(f"Pub/Sub webhook: processed {inserted} new emails for {email_address}")
