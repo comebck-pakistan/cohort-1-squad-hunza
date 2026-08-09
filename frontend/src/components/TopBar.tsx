@@ -30,7 +30,7 @@ export default function TopBar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(pendingDraftsCount + 1);
 
-  const topNavLinks = [
+  const topNavLinks: Array<{ label: string; href: string; badge?: number }> = [
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Inbox', href: '/inbox' },
     { label: 'Drafts', href: '/drafts', badge: pendingDraftsCount },
@@ -60,7 +60,7 @@ export default function TopBar() {
 
       {/* Horizontal pill navigation bar */}
       <nav className="hidden md:flex items-center bg-[#EFE9DE]/90 border border-[#E8E1D2] p-1 rounded-full shadow-inner">
-        {topNavLinks.map((link) => {
+        {topNavLinks.map((link: { label: string; href: string; badge?: number }) => {
           const isActive =
             router.pathname === link.href || (link.href !== '/dashboard' && router.pathname.startsWith(link.href));
           return (
