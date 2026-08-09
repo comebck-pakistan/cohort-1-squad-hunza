@@ -372,7 +372,35 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
 
         if (!mounted) return;
 
-        setEmails(mapBackendEmails(Array.isArray(emailsData) ? emailsData : []));
+        const mappedEmails = mapBackendEmails(Array.isArray(emailsData) ? emailsData : []);
+
+        const emailsWithDrafts: EmailItem[] = await Promise.all(
+          mappedEmails.map(async (email) => {
+            try {
+              const draft = await apiService.getDraftForEmail(email.id);
+              if (draft && draft.id) {
+                return ({
+                  ...email,
+                  status: (draft.status === 'sent' ? 'Approved & Sent' : 'Draft Ready') as EmailItem['status'],
+                  draftReply: {
+                    id: draft.id,
+                    text: draft.draft_body || '',
+                    tone: 'Friendly',
+                    status: (draft.status === 'sent' ? 'approved' : 'pending') as NonNullable<EmailItem['draftReply']>['status'],
+                  },
+                } as EmailItem);
+              }
+            } catch (err) {
+              // no draft exists for this email yet — leave as-is
+            }
+            return email;
+          })
+        );
+
+        if (!mounted) return;
+
+        setEmails(emailsWithDrafts);
+        
         setGmailConnected(Array.isArray(gmailStatus) && gmailStatus.length > 0);
 
         const activeConnection = Array.isArray(gmailStatus)
