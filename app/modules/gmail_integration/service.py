@@ -83,7 +83,7 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
 
     for message_id in message_ids:
         parsed = await gmail_client.get_message(access_token, message_id)
-        row = emails_repo.insert_email_if_new(user_id, parsed)
+        row = emails_repo.insert_email_if_new(user_id, {**parsed, "gmail_connection_id": connection_id})
         if row:
             inserted += 1
             email_id = row["id"]
@@ -185,7 +185,7 @@ async def handle_pubsub_notification(body: dict, background_tasks) -> None:
                 print(f"Skipping message {message_id}: {e}")
                 continue
             
-            row = emails_repo.insert_email_if_new(user_id, parsed)
+            row = emails_repo.insert_email_if_new(user_id, {**parsed, "gmail_connection_id": connection_id})
             if row:
                 inserted += 1
                 email_id = row["id"]

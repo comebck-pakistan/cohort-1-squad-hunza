@@ -57,7 +57,19 @@ async def approve_and_send_draft(draft_id: str, user_id: str) -> dict:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Original email has no sender address to reply to")
 
     connections = gmail_repo.list_connections_for_user(user_id)
-    active = next((c for c in connections if c["is_active"]), None)
+
+    # Prefer the exact connection this email arrived through (tracked via
+    # emails.gmail_connection_id) - sending from the wrong account fails with
+    # a 404 from Gmail since the thread_id won't exist in that mailbox.
+    # Falls back to "any active connection" for older emails inserted before
+    # this column existed.
+    active = next(
+        (c for c in connections if c["id"] == email.get("gmail_connection_id") and c["is_active"]),
+        None,
+    )
+    if not active:
+        active = next((c for c in connections if c["is_active"]), None)
+
     if not active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -81,9 +93,6 @@ async def approve_and_send_draft(draft_id: str, user_id: str) -> dict:
 
     updated_draft = repo.mark_approved_and_sent(draft_id, gmail_draft_id=sent.get("id"))
 
-    # Auto-resolve from the needs-attention queue - kept as a local import to
-    # avoid a hard dependency cycle (queue doesn't need to know about drafts,
-    # but drafts benefits from telling queue "this one's handled now").
     from app.modules.queue import repository as queue_repo
     queue_repo.resolve_email(email["id"])
 
