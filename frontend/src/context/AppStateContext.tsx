@@ -373,8 +373,12 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
         setEmails(mapBackendEmails(Array.isArray(emailsData) ? emailsData : []));
         setGmailConnected(Array.isArray(gmailStatus) && gmailStatus.length > 0);
 
-        const activeConnection = Array.isArray(gmailStatus) ? gmailStatus.find((c: any) => c.is_active) : null;
-        setGmailAddress(activeConnection?.gmail_address || null);
+        const activeConnection = Array.isArray(gmailStatus)
+          ? [...gmailStatus]
+              .filter((c: any) => c.is_active)
+              .sort((a: any, b: any) => new Date(b.connected_at).getTime() - new Date(a.connected_at).getTime())[0]
+          : null;
+          setGmailAddress(activeConnection?.gmail_address || null);
       } catch (err) {
         console.error('Failed to load app state', err);
         showToast('Unable to load backend email state.');
