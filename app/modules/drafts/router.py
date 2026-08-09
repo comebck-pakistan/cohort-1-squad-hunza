@@ -4,6 +4,7 @@ from app.core.deps import get_current_user
 from app.modules.drafts import repository as repo
 from app.modules.drafts import service
 from app.modules.drafts.schemas import DraftEditRequest, DraftOut
+from tasks.draft import generate_and_save
 
 router = APIRouter(prefix="/drafts", tags=["drafts"])
 
@@ -15,6 +16,11 @@ async def get_draft_for_email(email_id: str, current_user: dict = Depends(get_cu
     if not draft:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No draft exists yet for this email")
     return draft
+
+
+@router.post("/generate/{email_id}", response_model=DraftOut)
+def generate_draft_for_email(email_id: str):
+    return generate_and_save(email_id)
 
 
 @router.get("/{draft_id}", response_model=DraftOut)

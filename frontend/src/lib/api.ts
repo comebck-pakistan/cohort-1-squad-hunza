@@ -57,6 +57,12 @@ export const apiService = {
     return res.data;
   },
 
+  async generateDraftForEmail(emailId: string) {
+  const res = await client.post(`/drafts/generate/${emailId}`);
+  return res.data;
+  },
+
+
   async approveAndSendDraft(draftId: string) {
     const res = await client.post(`/drafts/${draftId}/approve`);
     return res.data;

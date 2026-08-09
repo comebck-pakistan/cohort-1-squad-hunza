@@ -319,34 +319,36 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
   };
 
   const generateDraft = async (emailId: string) => {
-    try {
-      const draft = await apiService.getDraftForEmail(emailId);
-      if (draft?.id) {
-        setEmails((prev) =>
-          prev.map((e) => {
-            if (e.id === emailId) {
-              return {
-                ...e,
-                status: 'Draft Ready',
-                draftReply: {
-                  id: draft.id,
-                  text: draft.draft_body || '',
-                  tone: 'Friendly',
-                  status: 'pending',
-                },
-              };
-            }
-            return e;
-          })
-        );
-        showToast('✨ Draft loaded from backend successfully.');
-        return;
-      }
-    } catch (err) {
-      console.error('Load draft failed', err);
+  try {
+    const draft = await apiService.generateDraftForEmail(emailId);
+    if (draft?.id) {
+      setEmails((prev) =>
+        prev.map((e) => {
+          if (e.id === emailId) {
+            return {
+              ...e,
+              status: 'Draft Ready',
+              draftReply: {
+                id: draft.id,
+                text: draft.draft_body || '',
+                tone: 'Friendly',
+                status: 'pending',
+              },
+            };
+          }
+          return e;
+        })
+      );
+      showToast('✨ Draft generated successfully.');
+      return;
     }
+  } catch (err) {
+    console.error('Generate draft failed', err);
+    showToast('Failed to generate draft.');
+    return;
+  }
 
-    showToast('No draft available for this email yet.');
+  showToast('No draft available for this email yet.');
   };
 
   useEffect(() => {
