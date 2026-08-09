@@ -17,7 +17,7 @@ def generate_draft(email_id: str) -> str:
     email_data = db.table("emails")\
         .select("*")\
         .eq("id", email_id)\
-        .single()\
+        .maybe_single()\
         .execute()
 
     if not email_data.data:
@@ -32,7 +32,7 @@ def generate_draft(email_id: str) -> str:
     category_data = db.table("email_categories")\
         .select("category, priority")\
         .eq("email_id", email_id)\
-        .single()\
+        .maybe_single()\
         .execute()
 
     category = "General Inquiry"
