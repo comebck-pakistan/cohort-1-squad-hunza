@@ -346,38 +346,37 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
           return;
         }
 
-        const [emailsData, gmailStatus, activityData] = await Promise.all([
+        const [emailsData, gmailStatus, activityData, allDrafts] = await Promise.all([
           apiService.getEmails(),
           apiService.getGmailStatus(),
           apiService.getActivityLog(),
+          apiService.getAllDrafts(),
         ]);
 
         if (!mounted) return;
 
         const mappedEmails = mapBackendEmails(Array.isArray(emailsData) ? emailsData : []);
 
-        const emailsWithDrafts: EmailItem[] = await Promise.all(
-          mappedEmails.map(async (email) => {
-            try {
-              const draft = await apiService.getDraftForEmail(email.id);
-              if (draft && draft.id) {
-                return ({
-                  ...email,
-                  status: (draft.status === 'sent' ? 'Approved & Sent' : 'Draft Ready') as EmailItem['status'],
-                  draftReply: {
-                    id: draft.id,
-                    text: draft.draft_body || '',
-                    tone: 'Friendly',
-                    status: (draft.status === 'sent' ? 'approved' : 'pending') as NonNullable<EmailItem['draftReply']>['status'],
-                  },
-                } as EmailItem);
-              }
-            } catch (err) {
-              // no draft exists for this email yet — leave as-is
-            }
-            return email;
-          })
+        const draftsByEmailId = new Map<string, any>(
+          (Array.isArray(allDrafts) ? allDrafts : []).map((d: any) => [d.email_id, d])
         );
+
+        const emailsWithDrafts: EmailItem[] = mappedEmails.map((email) => {
+          const draft = draftsByEmailId.get(email.id);
+          if (draft && draft.id) {
+            return ({
+              ...email,
+              status: (draft.status === 'sent' ? 'Approved & Sent' : 'Draft Ready') as EmailItem['status'],
+              draftReply: {
+                id: draft.id,
+                text: draft.draft_body || '',
+                tone: 'Friendly',
+                status: (draft.status === 'sent' ? 'approved' : 'pending') as NonNullable<EmailItem['draftReply']>['status'],
+              },
+            } as EmailItem);
+          }
+          return email;
+        });
 
         if (!mounted) return;
 

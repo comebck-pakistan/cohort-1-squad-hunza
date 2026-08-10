@@ -105,4 +105,10 @@ export const apiService = {
     const res = await client.get(`/activity`);
     return res.data;
   },
+
+  async getAllDrafts() {
+  const res = await client.get(`/drafts`);
+  return res.data;
+},
+
 };

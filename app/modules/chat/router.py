@@ -12,4 +12,4 @@ class ChatRequest(BaseModel):
 
 @router.post("/ask")
 async def chat_ask(body: ChatRequest, current_user: dict = Depends(get_current_user)):
-    return ask(body.question, current_user["id"])
+    return await ask(body.question, current_user["id"])

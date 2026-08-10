@@ -41,3 +41,7 @@ async def edit_draft(draft_id: str, body: DraftEditRequest, current_user: dict =
 async def approve_draft(draft_id: str, current_user: dict = Depends(get_current_user)):
     """DRAFT-03 - HR clicks approve, the draft is sent as a real Gmail reply."""
     return await service.approve_and_send_draft(draft_id, current_user["id"])
+
+@router.get("", response_model=list[DraftOut])
+async def list_drafts(current_user: dict = Depends(get_current_user)):
+    return repo.list_drafts_for_user(current_user["id"])

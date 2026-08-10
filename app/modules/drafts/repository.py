@@ -60,3 +60,16 @@ def mark_approved_and_sent(draft_id: str, gmail_draft_id: str | None) -> dict:
         .execute()
     )
     return res.data[0]
+
+def list_drafts_for_user(user_id: str) -> list[dict]:
+    """Returns all drafts belonging to this user's emails, in one query
+    instead of N individual by-email lookups."""
+    db = get_supabase()
+    email_ids = [
+        row["id"]
+        for row in db.table("emails").select("id").eq("user_id", user_id).execute().data or []
+    ]
+    if not email_ids:
+        return []
+    res = db.table("email_drafts").select("*").in_("email_id", email_ids).execute()
+    return res.data or []
