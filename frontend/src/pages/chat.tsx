@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useAppState } from '../context/AppStateContext';
 import { Sparkles, Send, Bot, User, ArrowUpRight, MessageSquare } from 'lucide-react';
+import { apiService } from '../lib/api';
 
 interface ChatMessage {
   id: string;
@@ -26,66 +27,52 @@ export default function ChatAssistant() {
     'How many pending drafts?',
   ];
 
-  const handleSendMessage = (questionText: string) => {
-    if (!questionText.trim()) return;
+  const handleSendMessage = async (questionText: string) => {
+  if (!questionText.trim()) return;
 
-    const userMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'user',
-      text: questionText,
+  const userMsg: ChatMessage = {
+    id: `msg-${Date.now()}`,
+    sender: 'user',
+    text: questionText,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  };
+
+  setMessages((prev) => [...prev, userMsg]);
+  setInputText('');
+  setIsTyping(true);
+
+  try {
+    const result = await apiService.askChatAssistant(questionText);
+
+    const links = Array.isArray(result?.sources)
+      ? result.sources.map((s: any) => ({
+          label: s.subject || 'View email',
+          href: `/inbox/${s.email_id}`,
+        }))
+      : undefined;
+
+    const aiMsg: ChatMessage = {
+      id: `ai-${Date.now()}`,
+      sender: 'ai',
+      text: result?.answer || "I couldn't generate an answer for that.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      links,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setInputText('');
-    setIsTyping(true);
-
-    // Dynamic RAG answer synthesis
-    setTimeout(() => {
-      let aiText = '';
-      let links: { label: string; href: string }[] | undefined = undefined;
-
-      const q = questionText.toLowerCase();
-
-      if (q.includes('how many emails') || q.includes('emails today')) {
-        const count = emails.length + 18;
-        aiText = `You have received **${count} emails** today. 6 require draft approval and 2 are categorized as high priority.`;
-        links = [{ label: 'Open Recruiter Inbox', href: '/inbox' }];
-      } else if (q.includes('ai engineer') || q.includes('applicants')) {
-        const aiCandidates = candidates.filter((c) => c.role === 'AI Engineer');
-        aiText = `We currently have **${aiCandidates.length} candidate applications** for the **AI Engineer** position: John Smith and Elena Rostova.`;
-        links = [
-          { label: 'View John Smith Profile', href: '/candidates' },
-          { label: 'View Elena Rostova Profile', href: '/candidates' },
-        ];
-      } else if (q.includes('high priority')) {
-        const highPriorityEmails = emails.filter((e) => e.priority === 'High');
-        aiText = `There are **${highPriorityEmails.length} high priority emails** needing immediate attention, including Jane Doe (Salary & Remote Policy) and Marcus Vance (Offer Letter).`;
-        links = highPriorityEmails.map((e) => ({
-          label: `${e.senderName} - ${e.subject.slice(0, 30)}...`,
-          href: `/inbox/${e.id}`,
-        }));
-      } else if (q.includes('pending drafts') || q.includes('drafts')) {
-        const pendingCount = emails.filter((e) => e.draftReply && e.draftReply.status === 'pending').length;
-        aiText = `There are currently **${pendingCount} pending AI drafts** awaiting your review and approval in the queue.`;
-        links = [{ label: 'Launch Draft Review Queue', href: '/drafts' }];
-      } else {
-        aiText = `I analyzed your HR inbox and candidate database. Based on your settings, all new candidate emails are automatically parsed and formatted into draft responses according to your Friendly tone preference.`;
-        links = [{ label: 'Go to Dashboard', href: '/dashboard' }];
-      }
-
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        sender: 'ai',
-        text: aiText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        links,
-      };
-
-      setMessages((prev) => [...prev, aiMsg]);
-      setIsTyping(false);
-    }, 600);
-  };
+    setMessages((prev) => [...prev, aiMsg]);
+  } catch (err) {
+    console.error('Chat request failed', err);
+    const errorMsg: ChatMessage = {
+      id: `ai-error-${Date.now()}`,
+      sender: 'ai',
+      text: 'Sorry, something went wrong answering that question. Please try again.',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages((prev) => [...prev, errorMsg]);
+  } finally {
+    setIsTyping(false);
+  }
+};
 
   return (
     <Layout>

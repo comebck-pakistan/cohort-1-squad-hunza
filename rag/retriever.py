@@ -98,43 +98,21 @@ def structured_query(question: str, user_id: str) -> dict:
     }
 
 
-def semantic_search(question: str, user_id: str, top_k: int = 5) -> list:
-    """
-    Embeds the question and finds the most similar emails/candidates
-    using pgvector cosine similarity search.
-    Returns top matching email records.
-    """
+async def semantic_search(question: str, user_id: str, top_k: int = 5) -> list:
     db = get_db()
-
-    # embed the question
-    question_embedding = embed_text(question)
-
-    # search email_embeddings using pgvector
-    # using Supabase's RPC function for vector similarity
+    question_embedding = await embed_text(question)
     result = db.rpc("match_emails", {
         "query_embedding": question_embedding,
         "match_user_id": user_id,
         "match_count": top_k
     }).execute()
-
     return result.data if result.data else []
 
 
-def retrieve(question: str, user_id: str) -> dict:
-    """
-    Main retrieval function.
-    Routes to structured query or semantic search based on intent.
-    Returns results with intent type for chat.py to use.
-    """
+async def retrieve(question: str, user_id: str) -> dict:
     intent = detect_intent(question)
-    print(f"Question: '{question}' → Intent: {intent}")
-
     if intent == "structured":
         return structured_query(question, user_id)
     else:
-        results = semantic_search(question, user_id)
-        return {
-            "type": "semantic",
-            "results": results,
-            "question": question
-        }
+        results = await semantic_search(question, user_id)
+        return {"type": "semantic", "results": results, "question": question}

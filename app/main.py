@@ -9,6 +9,7 @@ from app.modules.drafts.router import router as drafts_router
 from app.modules.queue.router import router as queue_router
 from app.modules.settings.router import router as settings_router
 from app.modules.activity.router import router as activity_router
+from app.modules.chat.router import router as chat_router
 
 settings = get_settings()
 
@@ -34,6 +35,7 @@ app.include_router(drafts_router)
 app.include_router(queue_router)
 app.include_router(settings_router)
 app.include_router(activity_router)
+app.include_router(chat_router)
 
 @app.get("/health")
 async def health():

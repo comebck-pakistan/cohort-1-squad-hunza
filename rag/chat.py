@@ -4,9 +4,9 @@ from config import get_llm
 from database import get_db
 from rag.retriever import retrieve
 from datetime import datetime, timezone
+import asyncio
 
-
-def ask(question: str, user_id: str) -> dict:
+async def ask(question: str, user_id: str) -> dict:
     """
     Main entry point for the RAG chat assistant.
     Takes a plain English question from the HR and returns an answer.
@@ -16,7 +16,7 @@ def ask(question: str, user_id: str) -> dict:
     2. If structured → return direct database answer
     3. If semantic → pass retrieved emails to Groq for answer
     """
-    retrieval = retrieve(question, user_id)
+    retrieval = await retrieve(question, user_id)
 
     # structured query — already has a direct answer
     if retrieval["type"] == "structured":
@@ -99,20 +99,24 @@ def save_chat_message(user_id: str, question: str, answer: str):
 
 
 if __name__ == "__main__":
+    import asyncio
     # test manually
     # add this to the __main__ block in rag/chat.py temporarily
-    from rag.embedder import embed_and_save_email
-    embed_and_save_email("84289971-071e-4a5b-85d0-af4eeb3435e4")
-    test_user_id = "4abe83e2-0bca-465e-8aaa-eff3f3271a4a"
+    async def main():    
+        from rag.embedder import embed_and_save_email
+        await embed_and_save_email("84289971-071e-4a5b-85d0-af4eeb3435e4")
+        test_user_id = "4abe83e2-0bca-465e-8aaa-eff3f3271a4a"
 
-    questions = [
-        "How many emails did I receive today?",
-        "Do we have any candidates with Python experience?",
-        "How many pending drafts do I have?",
-    ]
+        questions = [
+            "How many emails did I receive today?",
+            "Do we have any candidates with Python experience?",
+            "How many pending drafts do I have?",
+        ]
 
-    for q in questions:
-        print(f"\nQuestion: {q}")
-        result = ask(q, test_user_id)
-        print(f"Answer: {result['answer']}")
-        print(f"Type: {result['type']}")
+        for q in questions:
+            print(f"\nQuestion: {q}")
+            result =await ask(q, test_user_id)
+            print(f"Answer: {result['answer']}")
+            print(f"Type: {result['type']}")
+
+    asyncio.run(main())
