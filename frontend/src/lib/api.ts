@@ -101,5 +101,8 @@ export const apiService = {
     const res = await client.post(`/settings/save`, settingsData);
     return res.data;
   },
+  async getActivityLog() {
+    const res = await client.get(`/activity`);
+    return res.data;
+  },
 };
-

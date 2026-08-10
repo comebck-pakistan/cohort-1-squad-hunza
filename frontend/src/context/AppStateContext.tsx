@@ -249,24 +249,6 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         })
       );
 
-      if (email) {
-        setCorrections((prev) => [
-          {
-            id: `corr-${Date.now()}`,
-            date: new Date().toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }),
-            original: email.draftReply?.text.slice(0, 40) + '...',
-            corrected: text.slice(0, 40) + '...',
-            correctedBy: 'HR User',
-            type: 'Draft Edit',
-            emailSubject: email.subject,
-          },
-          ...prev,
-        ]);
-      }
       showToast('Draft edits saved!');
     } catch (err) {
       console.error('Update draft failed', err);
@@ -289,7 +271,6 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
     return;
   }
 
-  setCorrections((prev) => [/* ...unchanged... */]);
   showToast(`Category updated to "${newCategory}"`);
 };
 
@@ -365,9 +346,10 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
           return;
         }
 
-        const [emailsData, gmailStatus] = await Promise.all([
+        const [emailsData, gmailStatus, activityData] = await Promise.all([
           apiService.getEmails(),
           apiService.getGmailStatus(),
+          apiService.getActivityLog(),
         ]);
 
         if (!mounted) return;
@@ -402,6 +384,7 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
         setEmails(emailsWithDrafts);
         
         setGmailConnected(Array.isArray(gmailStatus) && gmailStatus.length > 0);
+        
 
         const activeConnection = Array.isArray(gmailStatus)
           ? [...gmailStatus]
@@ -409,6 +392,26 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
               .sort((a: any, b: any) => new Date(b.connected_at).getTime() - new Date(a.connected_at).getTime())[0]
           : null;
           setGmailAddress(activeConnection?.gmail_address || null);
+
+        const mappedCorrections: CorrectionLogItem[] = Array.isArray(activityData)
+          ? activityData.map((a: any) => ({
+              id: a.id,
+              date: a.corrected_at
+                ? new Date(a.corrected_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : '',
+              original: (a.original || '').slice(0, 40) + '...',
+              corrected: (a.corrected || '').slice(0, 40) + '...',
+              correctedBy: 'HR User',
+              type: a.type,
+              emailSubject: a.email_subject || 'No subject',
+            }))
+          : [];
+        setCorrections(mappedCorrections);
+
       } catch (err) {
         console.error('Failed to load app state', err);
         showToast('Unable to load backend email state.');

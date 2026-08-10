@@ -19,7 +19,10 @@ async def update_category(email_id: str, body: CategoryUpdate, current_user: dic
     email = repo.get_email_by_id(email_id, current_user["id"])
     if not email:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Email not found")
+    old_category = email.get("category")
     repo.update_email_category(email_id, body.category)
+    if old_category and old_category != body.category:
+        repo.log_category_correction(email_id, old_category, body.category)
     return repo.get_email_by_id(email_id, current_user["id"])
 
 @router.get("", response_model=list[EmailOut])

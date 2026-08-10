@@ -86,3 +86,12 @@ def update_email_category(email_id: str, category: str) -> dict:
         db.table("email_categories").update({"category": category}).eq("id", existing.data[0]["id"]).execute()
     else:
         db.table("email_categories").insert({"email_id": email_id, "category": category}).execute()
+
+def log_category_correction(email_id: str, original_category: str, corrected_category: str) -> dict:
+    db = get_supabase()
+    res = db.table("label_corrections").insert({
+        "email_id": email_id,
+        "original_category": original_category,
+        "corrected_category": corrected_category,
+    }).execute()
+    return res.data[0]
