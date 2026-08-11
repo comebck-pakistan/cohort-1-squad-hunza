@@ -1,0 +1,294 @@
+import React, { useState } from 'react';
+import Link from 'next/link';
+import Layout from '../components/Layout';
+import { useAppState } from '../context/AppStateContext';
+import { CHART_VOLUME_DATA, CHART_30DAY_VOLUME_DATA } from '../lib/mockData';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
+import {
+  Mail,
+  FileCheck,
+  UserPlus,
+  ShieldAlert,
+  ArrowUpRight,
+  ChevronRight,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
+
+export default function Dashboard() {
+  const { emails, candidates } = useAppState();
+  const [timeRange, setTimeRange] = useState<'7days' | '30days'>('7days');
+
+  const activeChartData = timeRange === '7days' ? CHART_VOLUME_DATA : CHART_30DAY_VOLUME_DATA;
+
+  const emailsTodayCount = emails.length + 18; // Simulated total
+  const pendingDrafts = emails.filter((e) => e.draftReply && e.draftReply.status === 'pending');
+  const newApplicantsCount = candidates.length + 4;
+  const spamFilteredCount = emails.filter((e) => e.category === 'Spam').length + 2;
+
+  const needsAttentionEmails = emails.filter(
+    (e) => e.priority === 'High' && e.status !== 'Approved & Sent'
+  );
+
+  return (
+    <Layout>
+      {/* Top Welcome Header - Original Warm Champagne / Beige Nixtio Style */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">
+            Welcome in, Sortdesk <span className="text-amber-500 font-normal">👋</span>
+          </h1>
+          <p className="text-xs text-zinc-500 font-semibold mt-1">
+            Recruitment inbox analytics & pending AI draft approvals for Sarah Jenkins
+          </p>
+        </div>
+
+        {/* Quick Stats Pill Header */}
+        <div className="flex items-center gap-3 bg-[#FBF9F5] border border-[#EAE3D5] p-2 rounded-2xl shadow-xs">
+          <div className="px-3.5 py-1.5 border-r border-[#EAE3D5]">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase">Employe</p>
+            <p className="text-base font-extrabold text-zinc-900">78</p>
+          </div>
+          <div className="px-3.5 py-1.5 border-r border-[#EAE3D5]">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase">Hirings</p>
+            <p className="text-base font-extrabold text-zinc-900">56</p>
+          </div>
+          <div className="px-3.5 py-1.5">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase">Projects</p>
+            <p className="text-base font-extrabold text-zinc-900">203</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Row — 4 Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Card 1 — Emails Today */}
+        <div className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Emails Today</span>
+            <div className="w-9 h-9 rounded-2xl bg-amber-400/20 text-amber-900 flex items-center justify-center font-bold">
+              <Mail className="w-4 h-4 text-amber-800" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-extrabold text-zinc-900">{emailsTodayCount}</span>
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+              <TrendingUp className="w-3 h-3" /> +14%
+            </span>
+          </div>
+        </div>
+
+        {/* Card 2 — Pending Drafts */}
+        <div className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Pending Drafts</span>
+            <div className="w-9 h-9 rounded-2xl bg-amber-400 text-zinc-900 flex items-center justify-center font-bold shadow-xs">
+              <FileCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-extrabold text-zinc-900">{pendingDrafts.length}</span>
+            <Link
+              href="/drafts"
+              className="text-xs font-bold text-zinc-800 hover:text-amber-600 flex items-center gap-1"
+            >
+              Review queue <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Card 3 — New Applicants */}
+        <div className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">New Applicants</span>
+            <div className="w-9 h-9 rounded-2xl bg-amber-400/20 text-amber-900 flex items-center justify-center font-bold">
+              <UserPlus className="w-4 h-4 text-amber-800" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-extrabold text-zinc-900">{newApplicantsCount}</span>
+            <span className="text-xs font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">
+              8 this week
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4 — Spam Filtered */}
+        <div className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Spam Filtered</span>
+            <div className="w-9 h-9 rounded-2xl bg-rose-100 text-rose-800 flex items-center justify-center font-bold">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-extrabold text-zinc-900">{spamFilteredCount}</span>
+            <span className="text-[11px] font-bold text-zinc-400">100% blocked</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Middle Row — Email Volume Chart */}
+      <div className="nixtio-card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-extrabold text-zinc-900">
+              {timeRange === '7days' ? '7-Day' : '30-Day'} Email Volume & Category Breakdown
+            </h2>
+            <p className="text-xs text-zinc-500 font-medium">
+              {timeRange === '7days'
+                ? 'Daily incoming recruiter messages categorized by AI'
+                : 'Monthly aggregated recruiter message trends across 4 weeks'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 bg-[#EFE9DE] p-1 rounded-xl text-xs font-bold text-zinc-700">
+            <button
+              onClick={() => setTimeRange('7days')}
+              className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                timeRange === '7days' ? 'bg-zinc-900 text-white shadow-xs' : 'hover:text-zinc-900'
+              }`}
+            >
+              Last 7 Days
+            </button>
+            <button
+              onClick={() => setTimeRange('30days')}
+              className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                timeRange === '30days' ? 'bg-zinc-900 text-white shadow-xs' : 'hover:text-zinc-900'
+              }`}
+            >
+              30 Days
+            </button>
+          </div>
+        </div>
+
+        <div className="h-64 w-full pt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={activeChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8E2D6" />
+              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 12 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1E1E24',
+                  borderColor: '#272730',
+                  borderRadius: '12px',
+                  color: '#FFF',
+                  fontSize: '12px',
+                }}
+              />
+              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+              <Bar dataKey="Applicants" fill="#1E1E24" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Interviews" fill="#F5C842" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Inquiries" fill="#8C8C9A" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Spam" fill="#F43F5E" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Bottom Row — Two Panels Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Panel — Needs Attention */}
+        <div className="nixtio-card p-6 space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></div>
+                <h3 className="text-base font-extrabold text-zinc-900">Needs Attention</h3>
+              </div>
+              <span className="text-xs font-bold text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full">
+                {needsAttentionEmails.length} High Priority
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {needsAttentionEmails.map((email) => (
+                <Link
+                  key={email.id}
+                  href={`/inbox/${email.id}`}
+                  className="block p-4 rounded-2xl bg-[#EFE9DE]/60 border border-[#E8E1D2] hover:bg-[#E8E1D2] transition-all group"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-extrabold text-zinc-900">{email.senderName}</span>
+                    <span className="text-[10px] font-extrabold text-rose-700 bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full">
+                      🔴 High Priority
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-zinc-800 line-clamp-1 group-hover:text-amber-800">
+                    {email.subject}
+                  </p>
+                  <div className="flex items-center justify-between mt-2 text-[11px] text-zinc-500 font-medium">
+                    <span className="bg-zinc-200 text-zinc-700 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                      {email.category}
+                    </span>
+                    <span>{email.date}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <Link
+            href="/inbox"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-700 hover:text-zinc-900 pt-4 border-t border-[#EAE3D5]"
+          >
+            View all inbox emails <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Right Panel — Recent Drafts */}
+        <div className="nixtio-card p-6 space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <h3 className="text-base font-extrabold text-zinc-900">Recent Drafts Awaiting Approval</h3>
+              </div>
+              <span className="text-xs font-bold text-amber-900 bg-amber-200 px-2.5 py-0.5 rounded-full">
+                {pendingDrafts.length} Pending
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {pendingDrafts.slice(0, 3).map((email) => (
+                <div
+                  key={email.id}
+                  className="p-4 rounded-2xl bg-[#EFE9DE]/60 border border-[#E8E1D2] flex items-center justify-between gap-4"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-xs font-extrabold text-zinc-900 truncate">{email.senderName}</p>
+                    <p className="text-xs font-medium text-zinc-600 truncate">{email.subject}</p>
+                  </div>
+                  <Link
+                    href={`/inbox/${email.id}`}
+                    className="shrink-0 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1"
+                  >
+                    <span>Review</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-amber-400" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Link
+            href="/drafts"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-700 hover:text-zinc-900 pt-4 border-t border-[#EAE3D5]"
+          >
+            Launch Draft Approval Queue <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+    </Layout>
+  );
+}
