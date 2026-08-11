@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useAppState } from '../context/AppStateContext';
@@ -13,13 +13,41 @@ interface ChatMessage {
   links?: { label: string; href: string }[];
 }
 
+
+
 export default function ChatAssistant() {
   const { emails, candidates } = useAppState();
-
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
-
+  
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const history = await apiService.getChatHistory();
+        const loadedMessages: ChatMessage[] = (Array.isArray(history) ? history : []).flatMap((h: any) => [
+          {
+            id: `user-${h.id}`,
+            sender: 'user' as const,
+            text: h.question,
+            timestamp: new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+          {
+            id: `ai-${h.id}`,
+            sender: 'ai' as const,
+            text: h.answer,
+            timestamp: new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        setMessages(loadedMessages);
+      } catch (err) {
+        console.error('Failed to load chat history', err);
+      }
+    };
+    loadHistory();
+  }, []);
+  
   const starterSuggestions = [
     'How many emails did I receive today?',
     'Show applicants for AI Engineer role',

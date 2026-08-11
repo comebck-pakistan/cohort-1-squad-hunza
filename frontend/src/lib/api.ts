@@ -107,8 +107,12 @@ export const apiService = {
   },
 
   async getAllDrafts() {
-  const res = await client.get(`/drafts`);
-  return res.data;
-},
+    const res = await client.get(`/drafts`);
+    return res.data;
+  },
 
+  async getChatHistory() {
+    const res = await client.get(`/chat/history`);
+    return res.data;
+  },
 };
