@@ -6,7 +6,48 @@ from rag.retriever import retrieve
 from datetime import datetime, timezone
 import asyncio
 
-async def ask(question: str, user_id: str) -> dict:
+def rewrite_question_with_history(question: str, history: list[dict]) -> str:
+    """
+    Uses recent conversation turns to rewrite a possibly-ambiguous follow-up
+    question into a standalone question retrieval can act on directly.
+    E.g. "share their subjects" after "how many emails today?" becomes
+    "list the subjects of today's emails". No-op if there's no history,
+    or if the question is already self-contained.
+    """
+    if not history:
+        return question
+
+    history_text = "\n".join(
+        f"{'User' if h['role'] == 'user' else 'Assistant'}: {h['text']}"
+        for h in history[-6:]  # last 6 turns is plenty of context
+    )
+
+    llm = get_llm()
+    parser = StrOutputParser()
+    prompt = ChatPromptTemplate.from_messages([
+        ('system', '''Given the recent conversation and a new follow-up question,
+        rewrite the follow-up into a complete, standalone question that makes
+        sense on its own - resolving pronouns like "they/them/their" and vague
+        references like "that" using the conversation history.
+
+        If the follow-up question is already standalone and doesn't depend on
+        the conversation, return it EXACTLY as-is.
+
+        Only output the rewritten question, nothing else - no explanation.
+
+        Conversation so far:
+        {history}
+
+        Follow-up question: {question}
+
+        Standalone question:''')
+    ])
+    chain = prompt | llm | parser
+    rewritten = chain.invoke({"history": history_text, "question": question})
+    return rewritten.strip()
+
+
+async def ask(question: str, user_id: str, history: list[dict] | None = None) -> dict:
     """
     Main entry point for the RAG chat assistant.
     Takes a plain English question from the HR and returns an answer.
@@ -16,7 +57,9 @@ async def ask(question: str, user_id: str) -> dict:
     2. If structured → return direct database answer
     3. If semantic → pass retrieved emails to Groq for answer
     """
-    retrieval = await retrieve(question, user_id)
+    standalone_question = rewrite_question_with_history(question, history or [])
+
+    retrieval = await retrieve(standalone_question, user_id)
 
     # structured query — already has a direct answer
     if retrieval["type"] == "structured":

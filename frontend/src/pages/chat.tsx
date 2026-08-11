@@ -30,6 +30,11 @@ export default function ChatAssistant() {
   const handleSendMessage = async (questionText: string) => {
   if (!questionText.trim()) return;
 
+  const historyForApi = messages.slice(-6).map((m) => ({
+    role: m.sender === 'user' ? 'user' : 'assistant',
+    text: m.text,
+  }));
+
   const userMsg: ChatMessage = {
     id: `msg-${Date.now()}`,
     sender: 'user',
@@ -42,7 +47,7 @@ export default function ChatAssistant() {
   setIsTyping(true);
 
   try {
-    const result = await apiService.askChatAssistant(questionText);
+    const result = await apiService.askChatAssistant(questionText, historyForApi);
 
     const links = Array.isArray(result?.sources)
       ? result.sources.map((s: any) => ({
@@ -73,7 +78,6 @@ export default function ChatAssistant() {
     setIsTyping(false);
   }
 };
-
   return (
     <Layout>
       {/* Header */}

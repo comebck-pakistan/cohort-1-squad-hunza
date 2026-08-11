@@ -91,9 +91,9 @@ export const apiService = {
   },
 
   // AI Chat Assistant RAG
-  async askChatAssistant(question: string, userId?: string) {
-    const res = await client.post(`/chat/ask`, { question, user_id: userId });
-    return res.data;
+  async askChatAssistant(question: string, history?: { role: string; text: string }[]) {
+  const res = await client.post(`/chat/ask`, { question, history });
+  return res.data;
   },
 
   // Save Onboarding / Settings
