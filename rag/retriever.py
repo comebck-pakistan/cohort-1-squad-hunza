@@ -111,7 +111,16 @@ async def retrieve(question: str, user_id: str) -> dict:
     today') both resolve to the same accurate query.
     """
     llm_with_tools = get_chat_llm_with_tools(TOOLS_SCHEMA)
-    response = llm_with_tools.invoke([...])
+    response = llm_with_tools.invoke([
+    HumanMessage(content=(
+        "You are helping answer an HR user's question by choosing the right "
+        "database tool call. If the question is about counting, listing, or "
+        "filtering emails, drafts, or candidates, call the matching tool with "
+        "the appropriate filters. If it's a vague/conceptual question that "
+        "doesn't fit a structured filter, don't call any tool.\n\n"
+        f"Question: {question}"
+    ))
+    ])
 
     response = llm_with_tools.invoke([
         HumanMessage(content=(
