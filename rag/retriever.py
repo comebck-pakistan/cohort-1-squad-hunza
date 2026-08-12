@@ -4,7 +4,7 @@ from config import get_llm
 from rag.tools import query_emails, query_drafts, query_candidates
 from rag.embedder import embed_text
 from database import get_db
-
+from config import get_chat_llm_with_tools
 
 TOOLS_SCHEMA = [
     {
@@ -110,8 +110,8 @@ async def retrieve(question: str, user_id: str) -> dict:
     phrasings of the same intent ('list today's mail' vs 'what came in
     today') both resolve to the same accurate query.
     """
-    llm = get_llm()
-    llm_with_tools = llm.bind_tools(TOOLS_SCHEMA)
+    llm_with_tools = get_chat_llm_with_tools(TOOLS_SCHEMA)
+    response = llm_with_tools.invoke([...])
 
     response = llm_with_tools.invoke([
         HumanMessage(content=(

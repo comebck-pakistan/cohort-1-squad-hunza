@@ -5,7 +5,7 @@ from config import get_llm
 from database import get_db
 from rag.retriever import retrieve
 from datetime import datetime, timezone
-
+from config import get_chat_llm
 
 def rewrite_question_with_history(question: str, history: list[dict]) -> str:
     """
@@ -21,7 +21,7 @@ def rewrite_question_with_history(question: str, history: list[dict]) -> str:
         for h in history[-6:]
     )
 
-    llm = get_llm()
+    llm = get_chat_llm()
     parser = StrOutputParser()
     prompt = ChatPromptTemplate.from_messages([
         ('system', '''Given the recent conversation and a new follow-up question,
@@ -76,7 +76,7 @@ async def ask(question: str, user_id: str, history: list[dict] | None = None) ->
     standalone_question = rewrite_question_with_history(question, history or [])
     retrieval = await retrieve(standalone_question, user_id)
 
-    llm = get_llm()
+    llm = get_chat_llm()
     parser = StrOutputParser()
 
     if retrieval["type"] == "structured":
