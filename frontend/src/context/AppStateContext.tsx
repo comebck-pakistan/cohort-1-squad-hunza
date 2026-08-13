@@ -133,6 +133,27 @@ const mapBackendEmails = (emails: any[]): EmailItem[] =>
     body: email.body_text || '',
   }));
 
+function mapBackendCandidates(rows: any[]): CandidateItem[] {
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.full_name || 'Unknown',
+    role: row.role_applied_for || 'Unspecified',
+    email: row.candidate_email || '',
+    phone: '',
+    experienceYears: row.years_of_experience || 0,
+    skills: Array.isArray(row.skills_extracted) ? row.skills_extracted : [],
+    appliedDate: row.created_at
+      ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : '',
+    status: row.status || 'Reviewing',
+    resumeUrl: row.resume_file_url || '',
+    resumeFileName: row.resume_file_url ? row.resume_file_url.split('/').pop() : '',
+    summary: row.summary || 'No summary available.',
+    emailId: row.email_id,
+    avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(row.full_name || 'NA')}&background=F5C842&color=1E1E24&bold=true`,
+  }));
+}
+
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isGmailConnected, setGmailConnected] = useState<boolean>(false);
   const [gmailAddress, setGmailAddress] = useState<string | null>(null);
@@ -346,11 +367,12 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
           return;
         }
 
-        const [emailsData, gmailStatus, activityData, allDrafts] = await Promise.all([
+        const [emailsData, gmailStatus, activityData, allDrafts,candidatesData] = await Promise.all([
           apiService.getEmails(),
           apiService.getGmailStatus(),
           apiService.getActivityLog(),
           apiService.getAllDrafts(),
+          apiService.getCandidates(),
         ]);
 
         if (!mounted) return;
@@ -381,7 +403,7 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
         if (!mounted) return;
 
         setEmails(emailsWithDrafts);
-        
+        setCandidates(mapBackendCandidates(Array.isArray(candidatesData) ? candidatesData : []));
         setGmailConnected(Array.isArray(gmailStatus) && gmailStatus.length > 0);
         
 

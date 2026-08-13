@@ -62,6 +62,11 @@ export const apiService = {
   return res.data;
   },
 
+  async getCandidates() {
+  const res = await client.get('/candidates');
+  return res.data;
+  },
+
   async approveAndSendDraft(draftId: string) {
     const res = await client.post(`/drafts/${draftId}/approve`);
     return res.data;

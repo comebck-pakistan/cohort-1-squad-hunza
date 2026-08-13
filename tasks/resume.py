@@ -138,25 +138,27 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     parser = StrOutputParser()
 
     prompt = ChatPromptTemplate.from_messages([
-        ('system', '''You are an HR assistant extracting candidate information.
+    ('system', '''You are an HR assistant extracting candidate information.
 
-        Read the email body and resume text below and extract the following:
-        - full_name: candidate's full name
-        - candidate_email: candidate's email address
-        - role_applied_for: the role they are applying for
-        - years_of_experience: number of years of experience (number only)
-        - skills: list of technical skills mentioned (comma separated)
+    Read the email body and resume text below and extract the following:
+    - full_name: candidate's full name
+    - candidate_email: candidate's email address
+    - role_applied_for: the role they are applying for
+    - years_of_experience: number of years of experience (number only)
+    - skills: list of technical skills mentioned (comma separated)
+    - summary: a 1-2 sentence professional summary of the candidate
 
-        Email Body: {email_body}
-        Resume Text: {resume_text}
+    Email Body: {email_body}
+    Resume Text: {resume_text}
 
-        Respond in this exact format and nothing else:
-        full_name: <value>
-        candidate_email: <value>
-        role_applied_for: <value>
-        years_of_experience: <value>
-        skills: <comma separated skills>
-        ''')
+    Respond in this exact format and nothing else:
+    full_name: <value>
+    candidate_email: <value>
+    role_applied_for: <value>
+    years_of_experience: <value>
+    skills: <comma separated skills>
+    summary: <value>
+    ''')
     ])
 
     chain = prompt | llm | parser
@@ -171,7 +173,8 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
         "candidate_email": None,
         "role_applied_for": None,
         "years_of_experience": None,
-        "skills": []
+        "skills": [],
+        "summary":None
     }
 
     for line in result.strip().split("\n"):
@@ -186,21 +189,14 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
         elif line.startswith("skills:"):
             skills_str = line.replace("skills:", "").strip()
             info["skills"] = [s.strip() for s in skills_str.split(",")]
+        elif line.startswith("summary:"):
+            info["summary"] = line.replace("summary:", "").strip()
 
     return info
 
 
-def save_candidate(
-    email_id: str,
-    user_id: str,
-    candidate_info: dict,
-    file_url: str
-) -> dict:
-    """
-    Saves extracted candidate information to the candidates table.
-    """
+def save_candidate(email_id, user_id, candidate_info, file_url):
     db = get_db()
-
     result = db.table("candidates").insert({
         "email_id": email_id,
         "user_id": user_id,
@@ -208,11 +204,12 @@ def save_candidate(
         "candidate_email": candidate_info.get("candidate_email"),
         "role_applied_for": candidate_info.get("role_applied_for"),
         "skills_extracted": candidate_info.get("skills"),
-        "resume_file_url": file_url
+        "resume_file_url": file_url,
+        "years_of_experience": candidate_info.get("years_of_experience"),
+        "summary": candidate_info.get("summary"),
     }).execute()
 
     if result.data:
         print(f"Candidate saved: {candidate_info.get('full_name')}")
         return result.data[0]
-
     return None
