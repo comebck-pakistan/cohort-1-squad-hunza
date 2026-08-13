@@ -20,88 +20,92 @@ async def process_resume_from_gmail(
     Downloads attachment from Gmail, uploads to Supabase Storage,
     extracts candidate info, saves to candidates table.
     """
-    db = get_db()
+    try:
+        db = get_db()
 
-    # get raw message payload to find attachment info
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(
-            f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{message_id}",
-            headers={"Authorization": f"Bearer {access_token}"},
-            params={"format": "full"}
+        # get raw message payload to find attachment info
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{message_id}",
+                headers={"Authorization": f"Bearer {access_token}"},
+                params={"format": "full"}
+            )
+            resp.raise_for_status()
+            raw_message = resp.json()
+
+        # get attachment info from payload
+        attachments = gmail_client.get_attachment_info(raw_message.get("payload", {}))
+
+        if not attachments:
+            print(f"No attachments found for email {email_id}")
+            return None
+
+        # process first resume attachment found
+        # filter for PDF and DOCX only
+        resume_attachment = None
+        for att in attachments:
+            filename = att["filename"].lower()
+            if filename.endswith(".pdf") or filename.endswith(".docx"):
+                resume_attachment = att
+                break
+
+        if not resume_attachment:
+            print(f"No PDF or DOCX attachment found for email {email_id}")
+            return None
+
+        # download attachment bytes from Gmail
+        file_bytes = await gmail_client.get_attachment(
+            access_token,
+            message_id,
+            resume_attachment["attachment_id"]
         )
-        resp.raise_for_status()
-        raw_message = resp.json()
 
-    # get attachment info from payload
-    attachments = gmail_client.get_attachment_info(raw_message.get("payload", {}))
+        # upload to Supabase Storage
+        filename = resume_attachment["filename"]
+        storage_path = f"resumes/{user_id}/{email_id}/{filename}"
 
-    if not attachments:
-        print(f"No attachments found for email {email_id}")
+        db.storage.from_("Resumes").upload(
+            path=storage_path,
+            file=file_bytes,
+            file_options={"content-type": resume_attachment["mime_type"]}
+        )
+
+        # get public URL
+        file_url = db.storage.from_("Resumes").get_public_url(storage_path)
+
+        # save to candidate_documents table
+        db.table("candidate_documents").insert({
+            "email_id": email_id,
+            "file_url": file_url,
+            "original_filename": filename,
+            "uploaded_at": "now()"
+        }).execute()
+
+        print(f"Resume uploaded: {file_url}")
+
+        # extract text from file
+        resume_text = extract_text_from_bytes(file_bytes, filename)
+
+        # fetch email body for context
+        email_data = db.table("emails")\
+            .select("body_text")\
+            .eq("id", email_id)\
+            .single()\
+            .execute()
+
+        email_body = email_data.data.get("body_text", "") if email_data.data else ""
+
+        # extract candidate info using AI
+        candidate_info = extract_candidate_info(email_body, resume_text)
+
+        # save to candidates table
+        save_candidate(email_id, user_id, candidate_info, file_url)
+
+        return candidate_info
+
+    except Exception as e:
+        print(f"Resume processing failed for email {email_id}: {e}")
         return None
-
-    # process first resume attachment found
-    # filter for PDF and DOCX only
-    resume_attachment = None
-    for att in attachments:
-        filename = att["filename"].lower()
-        if filename.endswith(".pdf") or filename.endswith(".docx"):
-            resume_attachment = att
-            break
-
-    if not resume_attachment:
-        print(f"No PDF or DOCX attachment found for email {email_id}")
-        return None
-
-    # download attachment bytes from Gmail
-    file_bytes = await gmail_client.get_attachment(
-        access_token,
-        message_id,
-        resume_attachment["attachment_id"]
-    )
-
-    # upload to Supabase Storage
-    filename = resume_attachment["filename"]
-    storage_path = f"resumes/{user_id}/{email_id}/{filename}"
-
-    db.storage.from_("resumes").upload(
-        path=storage_path,
-        file=file_bytes,
-        file_options={"content-type": resume_attachment["mime_type"]}
-    )
-
-    # get public URL
-    file_url = db.storage.from_("Resumes").get_public_url(storage_path)
-
-    # save to candidate_documents table
-    db.table("candidate_documents").insert({
-        "email_id": email_id,
-        "file_url": file_url,
-        "original_filename": filename,
-        "uploaded_at": "now()"
-    }).execute()
-
-    print(f"Resume uploaded: {file_url}")
-
-    # extract text from file
-    resume_text = extract_text_from_bytes(file_bytes, filename)
-
-    # fetch email body for context
-    email_data = db.table("emails")\
-        .select("body_text")\
-        .eq("id", email_id)\
-        .single()\
-        .execute()
-
-    email_body = email_data.data.get("body_text", "") if email_data.data else ""
-
-    # extract candidate info using AI
-    candidate_info = extract_candidate_info(email_body, resume_text)
-
-    # save to candidates table
-    save_candidate(email_id, user_id, candidate_info, file_url)
-
-    return candidate_info
-
 
 def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
     """
