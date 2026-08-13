@@ -46,10 +46,12 @@ export default function EmailDetail() {
     }
   }, [email]);
 
+  const [guidanceText, setGuidanceText] = useState<string>('');
+
   const handleGenerateDraft = async () => {
     if (!email) return;
     setIsGenerating(true);
-    await generateDraft(email.id);
+    await generateDraft(email.id, guidanceText.trim() || undefined);
     setIsGenerating(false);
   };
 
@@ -284,6 +286,14 @@ export default function EmailDetail() {
                   Generate an AI-powered draft reply tailored to this candidate message and job requirements.
                 </p>
               </div>
+
+              <textarea
+                value={guidanceText}
+                onChange={(e) => setGuidanceText(e.target.value)}
+                rows={3}
+                placeholder="Optional: add specific instructions for this draft (e.g. 'mention the salary range is $60-80k' or 'ask them to confirm availability next Tuesday')..."
+                className="w-full max-w-md bg-white border border-[#EAE3D5] rounded-2xl p-3 text-xs font-medium text-zinc-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs"
+              />
 
               <button
                 onClick={handleGenerateDraft}

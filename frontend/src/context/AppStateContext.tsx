@@ -79,7 +79,7 @@ interface AppStateContextType {
   updateDraftText: (emailId: string, text: string) => Promise<void>;
   updateEmailCategory: (emailId: string, newCategory: string) => void;
   regenerateDraftText: (emailId: string) => Promise<void>;
-  generateDraft: (emailId: string) => Promise<void>;
+  generateDraft: (emailId: string, guidance?: string) => Promise<void>;
   resumeModalUrl: string | null;
   setResumeModalUrl: (url: string | null) => void;
   activeResumeName: string | null;
@@ -299,9 +299,9 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
     }
   };
 
-  const generateDraft = async (emailId: string) => {
+  const generateDraft = async (emailId: string, guidance?: string) => {
   try {
-    const draft = await apiService.generateDraftForEmail(emailId);
+    const draft = await apiService.generateDraftForEmail(emailId, guidance);
     if (draft?.id) {
       setEmails((prev) =>
         prev.map((e) => {

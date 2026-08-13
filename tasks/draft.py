@@ -5,15 +5,16 @@ from database import get_db
 from datetime import datetime, timezone
 
 
-def generate_draft(email_id: str) -> str:
+def generate_draft(email_id: str, guidance: str | None = None) -> str:
     """
     Fetches email content and category from Supabase,
     then generates a professional draft reply using Groq.
+    If guidance is provided, the HR's specific instructions are followed;
+    otherwise a normal generic professional reply is generated.
     Returns the draft text as a string.
     """
     db = get_db()
 
-    # fetch email from emails table
     email_data = db.table("emails")\
         .select("*")\
         .eq("id", email_id)\
@@ -28,7 +29,6 @@ def generate_draft(email_id: str) -> str:
     subject = email.get("subject", "")
     body = email.get("body_text", "")
 
-    # fetch category from email_categories table
     category_data = db.table("email_categories")\
         .select("category, priority")\
         .eq("email_id", email_id)\
@@ -42,16 +42,22 @@ def generate_draft(email_id: str) -> str:
         category = category_data.data.get("category", "General Inquiry")
         priority = category_data.data.get("priority", "Medium")
 
-    # build the prompt
     llm = get_llm()
     parser = StrOutputParser()
+
+    guidance_block = (
+        f"\nAdditional instructions from the HR recruiter for this specific reply "
+        f"(follow these closely, they take priority over the default guidelines below):\n{guidance}\n"
+        if guidance and guidance.strip()
+        else ""
+    )
 
     prompt = ChatPromptTemplate.from_messages([
         ('system', '''You are a professional HR assistant writing email replies 
         on behalf of an HR recruiter.
 
         Write a professional, polite, and concise reply to the email below.
-        
+        {guidance_block}
         Guidelines:
         - Match the tone to the category and priority
         - For High priority emails be more prompt and urgent in tone
@@ -76,7 +82,8 @@ def generate_draft(email_id: str) -> str:
         "category": category,
         "priority": priority,
         "subject": subject,
-        "body": body
+        "body": body,
+        "guidance_block": guidance_block,
     })
 
     return draft.strip()
@@ -105,14 +112,13 @@ def save_draft(email_id: str, draft_body: str) -> dict:
         return None
 
 
-def generate_and_save(email_id: str) -> dict:
+def generate_and_save(email_id: str, guidance: str | None = None) -> dict:
     """
-    Generates and saves a draft reply.
-    Only called when HR explicitly requests it — not automatically.
-    Generated draft is saved it to the database.
-    Returns the saved draft record.
+    Generates and saves a draft reply. Only called when HR explicitly
+    requests it. If guidance is given, the draft follows those specific
+    instructions; otherwise a normal generic reply is generated.
     """
-    draft_body = generate_draft(email_id)
+    draft_body = generate_draft(email_id, guidance)
     if not draft_body:
         return None
     return save_draft(email_id, draft_body)

@@ -5,9 +5,14 @@ from app.modules.drafts import repository as repo
 from app.modules.drafts import service
 from app.modules.drafts.schemas import DraftEditRequest, DraftOut
 from tasks.draft import generate_and_save
+from pydantic import BaseModel
+
 
 router = APIRouter(prefix="/drafts", tags=["drafts"])
 
+
+class GenerateDraftRequest(BaseModel):
+    guidance: str | None = None
 
 @router.get("/by-email/{email_id}", response_model=DraftOut)
 async def get_draft_for_email(email_id: str, current_user: dict = Depends(get_current_user)):
@@ -45,3 +50,8 @@ async def approve_draft(draft_id: str, current_user: dict = Depends(get_current_
 @router.get("", response_model=list[DraftOut])
 async def list_drafts(current_user: dict = Depends(get_current_user)):
     return repo.list_drafts_for_user(current_user["id"])
+
+
+@router.post("/generate/{email_id}", response_model=DraftOut)
+def generate_draft_for_email(email_id: str, body: GenerateDraftRequest = GenerateDraftRequest()):
+    return generate_and_save(email_id, body.guidance)
