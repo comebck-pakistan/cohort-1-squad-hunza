@@ -24,8 +24,8 @@ async def get_draft_for_email(email_id: str, current_user: dict = Depends(get_cu
 
 
 @router.post("/generate/{email_id}", response_model=DraftOut)
-def generate_draft_for_email(email_id: str):
-    return generate_and_save(email_id)
+def generate_draft_for_email(email_id: str, body: GenerateDraftRequest = GenerateDraftRequest()):
+    return generate_and_save(email_id, body.guidance)
 
 
 @router.get("/{draft_id}", response_model=DraftOut)
@@ -52,6 +52,3 @@ async def list_drafts(current_user: dict = Depends(get_current_user)):
     return repo.list_drafts_for_user(current_user["id"])
 
 
-@router.post("/generate/{email_id}", response_model=DraftOut)
-def generate_draft_for_email(email_id: str, body: GenerateDraftRequest = GenerateDraftRequest()):
-    return generate_and_save(email_id, body.guidance)
