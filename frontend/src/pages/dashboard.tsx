@@ -117,22 +117,6 @@ export default function Dashboard() {
             Recruitment inbox analytics & pending AI draft approvals for {session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || 'User'}
           </p>
         </div>
-
-        {/* Quick Stats Pill Header */}
-        <div className="flex items-center gap-3 bg-[#FBF9F5] border border-[#EAE3D5] p-2 rounded-2xl shadow-xs">
-          <div className="px-3.5 py-1.5 border-r border-[#EAE3D5]">
-            <p className="text-[10px] font-bold text-zinc-400 uppercase">Employe</p>
-            <p className="text-base font-extrabold text-zinc-900">78</p>
-          </div>
-          <div className="px-3.5 py-1.5 border-r border-[#EAE3D5]">
-            <p className="text-[10px] font-bold text-zinc-400 uppercase">Hirings</p>
-            <p className="text-base font-extrabold text-zinc-900">56</p>
-          </div>
-          <div className="px-3.5 py-1.5">
-            <p className="text-[10px] font-bold text-zinc-400 uppercase">Projects</p>
-            <p className="text-base font-extrabold text-zinc-900">203</p>
-          </div>
-        </div>
       </div>
 
       {/* Top Row — 4 Summary Cards */}
