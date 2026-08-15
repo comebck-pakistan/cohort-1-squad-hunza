@@ -70,6 +70,8 @@ interface AppStateContextType {
   updateOnboarding: (data: Partial<OnboardingState>) => void;
   emails: EmailItem[];
   candidates: CandidateItem[];
+  totalEmailCount: number;
+  setTotalEmailCount: (count: number) => void;
   corrections: CorrectionLogItem[];
   categories: string[];
   jobRoles: string[];
@@ -183,6 +185,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [activeResumeName, setActiveResumeName] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [totalEmailCount, setTotalEmailCount] = useState<number>(0);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -373,12 +376,13 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
           return;
         }
 
-        const [emailsData, gmailStatus, activityData, allDrafts,candidatesData] = await Promise.all([
+        const [emailsData, gmailStatus, activityData, allDrafts,candidatesData,emailCount] = await Promise.all([
           apiService.getEmails(),
           apiService.getGmailStatus(),
           apiService.getActivityLog(),
           apiService.getAllDrafts(),
           apiService.getCandidates(),
+          apiService.getEmailCount(),
         ]);
 
         if (!mounted) return;
@@ -410,6 +414,7 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
 
         setEmails(emailsWithDrafts);
         setCandidates(mapBackendCandidates(Array.isArray(candidatesData) ? candidatesData : []));
+        setTotalEmailCount(emailCount);
         setGmailConnected(Array.isArray(gmailStatus) && gmailStatus.length > 0);
         
 
@@ -477,6 +482,8 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
         updateOnboarding,
         emails,
         candidates,
+        totalEmailCount,
+        setTotalEmailCount,
         corrections,
         categories,
         jobRoles,

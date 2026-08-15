@@ -29,7 +29,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { emails, candidates } = useAppState();
+  const { emails, candidates, totalEmailCount } = useAppState();
   const [timeRange, setTimeRange] = useState<'7days' | '30days'>('7days');
 
   useEffect(() => {
@@ -93,7 +93,7 @@ export default function Dashboard() {
     }));
   }, [emails, timeRange]);
 
-  const emailsTodayCount = emails.length;
+  const emailsTodayCount = totalEmailCount;
   const pendingDrafts = emails.filter((e) => e.draftReply && e.draftReply.status === 'pending');
   const newApplicantsCount = candidates.length;
   const spamFilteredCount = emails.filter((e) => e.category === 'Spam').length;

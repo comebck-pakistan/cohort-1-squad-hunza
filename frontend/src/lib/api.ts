@@ -119,4 +119,10 @@ export const apiService = {
     const res = await client.get(`/chat/history`);
     return res.data;
   },
+
+  async getEmailCount() {
+  const res = await client.get('/emails/count');
+  return res.data.count;
+  },
+
 };

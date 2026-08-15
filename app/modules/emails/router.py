@@ -33,6 +33,9 @@ async def list_emails(
 ):
     return repo.list_emails_for_user(current_user["id"], limit=limit, offset=offset)
 
+@router.get("/count")
+async def get_email_count(current_user: dict = Depends(get_current_user)):
+    return {"count": repo.count_emails_for_user(current_user["id"])}
 
 @router.get("/{email_id}", response_model=EmailOut)
 async def get_email(email_id: str, current_user: dict = Depends(get_current_user)):
