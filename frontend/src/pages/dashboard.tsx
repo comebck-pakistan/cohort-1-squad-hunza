@@ -124,7 +124,7 @@ export default function Dashboard() {
         {/* Card 1 — Emails Today */}
         <div className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Emails Today</span>
+            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total Emails</span>
             <div className="w-9 h-9 rounded-2xl bg-amber-400/20 text-amber-900 flex items-center justify-center font-bold">
               <Mail className="w-4 h-4 text-amber-800" />
             </div>
@@ -132,7 +132,7 @@ export default function Dashboard() {
           <div className="mt-4 flex items-baseline justify-between">
             <span className="text-3xl font-extrabold text-zinc-900">{emailsTodayCount}</span>
             <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-              <TrendingUp className="w-3 h-3" /> +14%
+              <TrendingUp className="w-3 h-3" />
             </span>
           </div>
         </div>
