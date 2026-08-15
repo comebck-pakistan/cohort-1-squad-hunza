@@ -173,7 +173,10 @@ export default function Dashboard() {
         </div>
 
         {/* Card 3 — New Applicants */}
-        <div className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all">
+        <Link
+          href="/candidates"
+          className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">New Applicants</span>
             <div className="w-9 h-9 rounded-2xl bg-amber-400/20 text-amber-900 flex items-center justify-center font-bold">
@@ -182,11 +185,9 @@ export default function Dashboard() {
           </div>
           <div className="mt-4 flex items-baseline justify-between">
             <span className="text-3xl font-extrabold text-zinc-900">{newApplicantsCount}</span>
-            <span className="text-xs font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">
-            
-            </span>
+            <span className="text-xs font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full" />
           </div>
-        </div>
+        </Link>
 
         {/* Card 4 — Spam Filtered */}
         <div className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all">
