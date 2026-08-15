@@ -131,4 +131,9 @@ export const apiService = {
   const res = await client.get('/emails/count', { params });
   return res.data.count;
 },
+
+async getEmailCategoryCount(category: string) {
+  const res = await client.get('/emails/count-by-category', { params: { category } });
+  return res.data.count;
+},
 };

@@ -4,6 +4,7 @@ import Layout from '../../components/Layout';
 import { useAppState, mapBackendEmails } from '../../context/AppStateContext';
 import { apiService } from '../../lib/api';
 import { Search, Filter, Mail, ArrowUpRight, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/router';
 
 const PAGE_SIZE = 50;
 
@@ -79,6 +80,14 @@ export default function InboxList() {
         return 'bg-zinc-200 text-zinc-800 border-zinc-300';
     }
   };
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof router.query.category === 'string') {
+      setSelectedCategoryTab(router.query.category);
+    }
+  }, [router.query.category]);
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {

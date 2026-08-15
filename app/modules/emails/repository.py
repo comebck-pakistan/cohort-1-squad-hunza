@@ -60,15 +60,6 @@ def list_emails_for_user(user_id: str, limit: int = 50, offset: int = 0) -> list
     cat_map = _latest_category_map(db, [e["id"] for e in emails])
     return [_attach_latest_category(e, cat_map) for e in emails]
 
-def count_emails_for_user(user_id: str) -> int:
-    db = get_supabase()
-    res = (
-        db.table("emails")
-        .select("id", count="exact")
-        .eq("user_id", user_id)
-        .execute()
-    )
-    return res.count or 0
 
 def get_email_by_id(email_id: str, user_id: str) -> dict | None:
     db = get_supabase()
@@ -125,4 +116,19 @@ def count_emails_for_user(user_id: str, start_date: str | None = None, end_date:
     if end_date:
         query = query.lte("received_at", end_date)
     res = query.execute()
+    return res.count or 0
+
+def count_emails_by_category(user_id: str, category: str) -> int:
+    db = get_supabase()
+    email_ids_res = db.table("emails").select("id").eq("user_id", user_id).execute()
+    all_ids = [e["id"] for e in email_ids_res.data]
+    if not all_ids:
+        return 0
+    res = (
+        db.table("email_categories")
+        .select("email_id", count="exact")
+        .eq("category", category)
+        .in_("email_id", all_ids)
+        .execute()
+    )
     return res.count or 0

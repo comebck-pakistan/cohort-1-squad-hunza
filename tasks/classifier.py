@@ -24,6 +24,9 @@ def classifier(subject:str,body:str) -> str:
         - General Inquiry: a genuine question about the role or company
         - Referral: someone referring another candidate for a role
         - Candidate Withdrawal: candidate withdrawing their application
+        - Spam: promotional content, newsletters, automated notifications, marketing 
+          emails, or anything unrelated to hiring, recruitment, or genuine 
+          candidate/company correspondence
         
         Now the second task is to identify the priority of the email on the basis of urgency and you have to prioritize on the basis given below.
 

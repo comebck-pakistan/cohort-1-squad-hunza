@@ -165,7 +165,11 @@ const periodLabel = {
   const emailsTodayCount = totalEmailCount;
   const pendingDrafts = emails.filter((e) => e.draftReply && e.draftReply.status === 'pending');
   const newApplicantsCount = candidates.length;
-  const spamFilteredCount = emails.filter((e) => e.category === 'Spam').length;
+  const [spamCount, setSpamCount] = useState<number>(0);
+
+  useEffect(() => {
+    apiService.getEmailCategoryCount('Spam').then(setSpamCount).catch(() => setSpamCount(0));
+  }, []);
 
   const needsAttentionEmails = emails.filter(
     (e) => e.priority === 'High' && e.status !== 'Approved & Sent'
@@ -243,7 +247,8 @@ const periodLabel = {
         </Link>
 
         {/* Card 4 — Spam Filtered */}
-        <div className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all">
+        {/* Card 4 — Spam Filtered */}
+        <Link href="/inbox?category=Spam" className="nixtio-card p-5 flex flex-col justify-between relative overflow-hidden group hover:border-zinc-400 transition-all cursor-pointer">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Spam Filtered</span>
             <div className="w-9 h-9 rounded-2xl bg-rose-100 text-rose-800 flex items-center justify-center font-bold">
@@ -251,10 +256,10 @@ const periodLabel = {
             </div>
           </div>
           <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-zinc-900">{spamFilteredCount}</span>
+            <span className="text-3xl font-extrabold text-zinc-900">{spamCount}</span>
             <span className="text-[11px] font-bold text-zinc-400">100% blocked</span>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Middle Row — Email Volume Chart */}
