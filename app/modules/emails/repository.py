@@ -104,3 +104,15 @@ def log_category_correction(email_id: str, original_category: str, corrected_cat
         "corrected_category": corrected_category,
     }).execute()
     return res.data[0]
+
+
+def delete_email(email_id: str, user_id: str) -> bool:
+    db = get_supabase()
+    res = (
+        db.table("emails")
+        .delete()
+        .eq("id", email_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    return len(res.data) > 0

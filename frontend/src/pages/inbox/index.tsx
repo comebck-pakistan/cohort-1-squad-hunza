@@ -1,26 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { useAppState } from '../../context/AppStateContext';
-import { Search, Filter, Mail, ArrowUpRight, CheckCircle, Clock } from 'lucide-react';
+import { apiService } from '../../lib/api';
+import { Search, Filter, Mail, ArrowUpRight, CheckCircle, Clock, Trash2 } from 'lucide-react';
+
+const PAGE_SIZE = 50;
 
 export default function InboxList() {
-  const { emails, categories } = useAppState();
+  const { categories, totalEmailCount, showToast } = useAppState();
+  const [pageEmails, setPageEmails] = useState<any[]>([]);
+  const [page, setPage] = useState(0);
+  const [loadingPage, setLoadingPage] = useState(true);
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filterTabs = ['All', ...categories];
 
-  const filteredEmails = emails.filter((email) => {
+  const fetchPage = useCallback(async (pageNum: number) => {
+    setLoadingPage(true);
+    try {
+      const data = await apiService.getEmails(PAGE_SIZE, pageNum * PAGE_SIZE);
+      setPageEmails(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load emails page', err);
+      showToast('Unable to load emails.');
+    } finally {
+      setLoadingPage(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchPage(page);
+  }, [page, fetchPage]);
+
+  const handleDelete = async (emailId: string) => {
+    if (!confirm('Delete this email? This cannot be undone.')) return;
+    setDeletingId(emailId);
+    try {
+      await apiService.deleteEmail(emailId);
+      setPageEmails((prev) => prev.filter((e) => e.id !== emailId));
+      showToast('Email deleted.');
+    } catch (err) {
+      console.error('Failed to delete email', err);
+      showToast('Failed to delete email.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const filteredEmails = pageEmails.filter((email) => {
     const matchesCategory =
       selectedCategoryTab === 'All' || email.category === selectedCategoryTab;
     const query = searchQuery.toLowerCase();
     const matchesSearch =
       !query ||
-      email.senderName.toLowerCase().includes(query) ||
-      email.senderEmail.toLowerCase().includes(query) ||
-      email.subject.toLowerCase().includes(query) ||
-      email.body.toLowerCase().includes(query);
+      email.senderName?.toLowerCase().includes(query) ||
+      email.senderEmail?.toLowerCase().includes(query) ||
+      email.subject?.toLowerCase().includes(query) ||
+      email.body?.toLowerCase().includes(query);
     return matchesCategory && matchesSearch;
   });
 
@@ -51,6 +90,8 @@ export default function InboxList() {
     }
   };
 
+  const totalPages = Math.max(1, Math.ceil(totalEmailCount / PAGE_SIZE));
+
   return (
     <Layout>
       {/* Header */}
@@ -58,7 +99,7 @@ export default function InboxList() {
         <div>
           <h1 className="text-2xl font-extrabold text-zinc-900 tracking-tight">Recruiter Inbox</h1>
           <p className="text-xs text-zinc-500 font-semibold mt-1">
-            Real-time categorized recruiter emails & candidate applications
+            Real-time categorized recruiter emails & candidate applications — {totalEmailCount} total
           </p>
         </div>
 
@@ -107,12 +148,19 @@ export default function InboxList() {
                 <th className="py-3.5 px-6">Priority</th>
                 <th className="py-3.5 px-6">Status</th>
                 <th className="py-3.5 px-6 text-right">Date</th>
+                <th className="py-3.5 px-6 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EAE3D5] text-xs font-medium text-zinc-800">
-              {filteredEmails.length === 0 ? (
+              {loadingPage ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-zinc-400 font-semibold">
+                  <td colSpan={7} className="py-12 text-center text-zinc-400 font-semibold">
+                    Loading emails...
+                  </td>
+                </tr>
+              ) : filteredEmails.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-zinc-400 font-semibold">
                     No emails match the selected category filter or search query.
                   </td>
                 </tr>
@@ -134,7 +182,7 @@ export default function InboxList() {
                             />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-amber-400/20 text-amber-900 font-bold text-xs flex items-center justify-center border border-amber-300">
-                              {email.senderName.charAt(0)}
+                              {email.senderName?.charAt(0)}
                             </div>
                           )}
                           <div>
@@ -180,11 +228,49 @@ export default function InboxList() {
                     <td className="py-4 px-6 text-right font-mono text-[11px] text-zinc-500">
                       {email.date}
                     </td>
+
+                    {/* Actions */}
+                    <td className="py-4 px-6 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(email.id);
+                        }}
+                        disabled={deletingId === email.id}
+                        className="p-2 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                        title="Delete email"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#EAE3D5] text-xs font-bold text-zinc-600">
+          <span>
+            Page {page + 1} of {totalPages} — showing {pageEmails.length} of {totalEmailCount} total
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0 || loadingPage}
+              className="px-3 py-1.5 rounded-xl bg-[#EFE9DE] hover:bg-[#E4DCCF] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1 || loadingPage}
+              className="px-3 py-1.5 rounded-xl bg-[#EFE9DE] hover:bg-[#E4DCCF] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </Layout>

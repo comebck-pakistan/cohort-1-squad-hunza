@@ -37,6 +37,14 @@ async def list_emails(
 async def get_email_count(current_user: dict = Depends(get_current_user)):
     return {"count": repo.count_emails_for_user(current_user["id"])}
 
+@router.delete("/{email_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_email(email_id: str, current_user: dict = Depends(get_current_user)):
+    email = repo.get_email_by_id(email_id, current_user["id"])
+    if not email:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Email not found")
+    repo.delete_email(email_id, current_user["id"])
+    return None
+
 @router.get("/{email_id}", response_model=EmailOut)
 async def get_email(email_id: str, current_user: dict = Depends(get_current_user)):
     email = repo.get_email_by_id(email_id, current_user["id"])

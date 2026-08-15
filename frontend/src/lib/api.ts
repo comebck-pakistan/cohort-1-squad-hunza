@@ -41,10 +41,10 @@ export const apiService = {
   },
 
   // Emails
-  async getEmails(params?: { category?: string; priority?: string; search?: string }) {
-    const res = await client.get(`/emails`, { params });
-    return res.data;
-  },
+  async getEmails(limit = 50, offset = 0) {
+  const res = await client.get('/emails', { params: { limit, offset } });
+  return res.data;
+},
 
   async getEmailDetail(emailId: string) {
     const res = await client.get(`/emails/${emailId}`);
@@ -125,4 +125,7 @@ export const apiService = {
   return res.data.count;
   },
 
+  async deleteEmail(emailId: string) {
+  await client.delete(`/emails/${emailId}`);
+  },
 };
