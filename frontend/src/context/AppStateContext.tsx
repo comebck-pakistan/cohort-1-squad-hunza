@@ -117,7 +117,7 @@ const DEFAULT_ROLES = [
   'DevOps Specialist',
 ];
 
-const mapBackendEmails = (emails: any[]): EmailItem[] =>
+export const mapBackendEmails = (emails: any[]): EmailItem[] =>
   emails.map((email) => ({
     id: email.id,
     senderName: email.sender_name || email.sender_email || 'Unknown Applicant',

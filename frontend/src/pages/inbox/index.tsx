@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
-import { useAppState } from '../../context/AppStateContext';
+import { useAppState, mapBackendEmails } from '../../context/AppStateContext';
 import { apiService } from '../../lib/api';
 import { Search, Filter, Mail, ArrowUpRight, CheckCircle, Clock, Trash2 } from 'lucide-react';
 
@@ -22,7 +22,8 @@ export default function InboxList() {
     setLoadingPage(true);
     try {
       const data = await apiService.getEmails(PAGE_SIZE, pageNum * PAGE_SIZE);
-      setPageEmails(Array.isArray(data) ? data : []);
+      const mapped = mapBackendEmails(Array.isArray(data) ? data : []);
+      setPageEmails(mapped);
     } catch (err) {
       console.error('Failed to load emails page', err);
       showToast('Unable to load emails.');
