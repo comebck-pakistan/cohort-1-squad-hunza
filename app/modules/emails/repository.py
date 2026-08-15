@@ -116,3 +116,13 @@ def delete_email(email_id: str, user_id: str) -> bool:
         .execute()
     )
     return len(res.data) > 0
+
+def count_emails_for_user(user_id: str, start_date: str | None = None, end_date: str | None = None) -> int:
+    db = get_supabase()
+    query = db.table("emails").select("id", count="exact").eq("user_id", user_id)
+    if start_date:
+        query = query.gte("received_at", start_date)
+    if end_date:
+        query = query.lte("received_at", end_date)
+    res = query.execute()
+    return res.count or 0

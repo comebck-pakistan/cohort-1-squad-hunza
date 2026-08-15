@@ -120,12 +120,15 @@ export const apiService = {
     return res.data;
   },
 
-  async getEmailCount() {
-  const res = await client.get('/emails/count');
-  return res.data.count;
-  },
-
   async deleteEmail(emailId: string) {
   await client.delete(`/emails/${emailId}`);
   },
+
+  async getEmailCount(startDate?: string, endDate?: string) {
+  const params: any = {};
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
+  const res = await client.get('/emails/count', { params });
+  return res.data.count;
+},
 };

@@ -34,8 +34,13 @@ async def list_emails(
     return repo.list_emails_for_user(current_user["id"], limit=limit, offset=offset)
 
 @router.get("/count")
-async def get_email_count(current_user: dict = Depends(get_current_user)):
-    return {"count": repo.count_emails_for_user(current_user["id"])}
+async def get_email_count(
+    current_user: dict = Depends(get_current_user),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
+):
+    count = repo.count_emails_for_user(current_user["id"], start_date=start_date, end_date=end_date)
+    return {"count": count}
 
 @router.delete("/{email_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_email(email_id: str, current_user: dict = Depends(get_current_user)):

@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabase';
 import { useAppState } from '../context/AppStateContext';
+import { apiService } from '../lib/api';
 import {
   BarChart,
   Bar,
@@ -30,7 +31,70 @@ export default function Dashboard() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { emails, candidates, totalEmailCount } = useAppState();
-  const [timeRange, setTimeRange] = useState<'7days' | '30days'>('7days');
+  type PeriodOption = 'today' | '7days' | '30days' | 'custom';
+const [timeRange, setTimeRange] = useState<PeriodOption>('7days');
+const [customStart, setCustomStart] = useState<string>('');
+const [customEnd, setCustomEnd] = useState<string>('');
+const [showCustomPicker, setShowCustomPicker] = useState(false);
+const [periodCount, setPeriodCount] = useState<number | null>(null);
+const [periodCountLoading, setPeriodCountLoading] = useState(false);
+
+const getPeriodRange = (period: PeriodOption): { start?: string; end?: string } => {
+  const now = new Date();
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+  if (period === 'today') {
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    return { start: startOfToday.toISOString(), end: endOfToday.toISOString() };
+  }
+  if (period === '7days') {
+    const start = new Date(now);
+    start.setDate(start.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+    return { start: start.toISOString(), end: endOfToday.toISOString() };
+  }
+  if (period === '30days') {
+    const start = new Date(now);
+    start.setDate(start.getDate() - 29);
+    start.setHours(0, 0, 0, 0);
+    return { start: start.toISOString(), end: endOfToday.toISOString() };
+  }
+  if (period === 'custom' && customStart && customEnd) {
+    return {
+      start: new Date(customStart).toISOString(),
+      end: new Date(new Date(customEnd).setHours(23, 59, 59)).toISOString(),
+    };
+  }
+  return {};
+};
+
+useEffect(() => {
+  const fetchPeriodCount = async () => {
+    if (timeRange === 'custom' && (!customStart || !customEnd)) {
+      setPeriodCount(null);
+      return;
+    }
+    setPeriodCountLoading(true);
+    try {
+      const { start, end } = getPeriodRange(timeRange);
+      const count = await apiService.getEmailCount(start, end);
+      setPeriodCount(count);
+    } catch (err) {
+      console.error('Failed to fetch period count', err);
+      setPeriodCount(null);
+    } finally {
+      setPeriodCountLoading(false);
+    }
+  };
+  fetchPeriodCount();
+}, [timeRange, customStart, customEnd]);
+
+const periodLabel = {
+  today: 'Today',
+  '7days': 'Last 7 Days',
+  '30days': 'Last 30 Days',
+  custom: customStart && customEnd ? `${customStart} → ${customEnd}` : 'Custom Range',
+}[timeRange];
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -59,7 +123,10 @@ export default function Dashboard() {
     const today = new Date();
 
     const bucketLabel = (date: Date) => {
-      if (timeRange === '7days') {
+      if (timeRange === 'today') {
+        return `${date.getHours()}:00`;
+      }
+      if (timeRange === '7days' || timeRange === 'custom') {
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }
       const weekNumber = Math.floor((date.getDate() - 1) / 7) + 1;
@@ -80,9 +147,11 @@ export default function Dashboard() {
       }
     });
 
-    const labels = timeRange === '7days'
-      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-      : ['W1', 'W2', 'W3', 'W4'];
+    const labels = timeRange === '30days'
+      ? ['W1', 'W2', 'W3', 'W4']
+      : timeRange === 'today'
+      ? Array.from({ length: 24 }, (_, i) => `${i}:00`)
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return labels.map((label) => ({
       day: label,
@@ -190,36 +259,81 @@ export default function Dashboard() {
 
       {/* Middle Row — Email Volume Chart */}
       <div className="nixtio-card p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-extrabold text-zinc-900">
-              {timeRange === '7days' ? '7-Day' : '30-Day'} Email Volume & Category Breakdown
-            </h2>
-            <p className="text-xs text-zinc-500 font-medium">
-              {timeRange === '7days'
-                ? 'Daily incoming recruiter messages categorized by AI'
-                : 'Monthly aggregated recruiter message trends across 4 weeks'}
-            </p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-extrabold text-zinc-900">
+                {periodLabel} — Email Volume & Category Breakdown
+              </h2>
+              <p className="text-xs text-zinc-500 font-medium flex items-center gap-2">
+                <span>Recruiter messages categorized by AI</span>
+                <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full text-[11px]">
+                  {periodCountLoading ? '...' : periodCount !== null ? `${periodCount} emails` : '—'}
+                </span>
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 bg-[#EFE9DE] p-1 rounded-xl text-xs font-bold text-zinc-700 flex-wrap">
+              <button
+                onClick={() => { setTimeRange('today'); setShowCustomPicker(false); }}
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  timeRange === 'today' ? 'bg-zinc-900 text-white shadow-xs' : 'hover:text-zinc-900'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => { setTimeRange('7days'); setShowCustomPicker(false); }}
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  timeRange === '7days' ? 'bg-zinc-900 text-white shadow-xs' : 'hover:text-zinc-900'
+                }`}
+              >
+                Last 7 Days
+              </button>
+              <button
+                onClick={() => { setTimeRange('30days'); setShowCustomPicker(false); }}
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  timeRange === '30days' ? 'bg-zinc-900 text-white shadow-xs' : 'hover:text-zinc-900'
+                }`}
+              >
+                Last 30 Days
+              </button>
+              <button
+                onClick={() => { setTimeRange('custom'); setShowCustomPicker((v) => !v); }}
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  timeRange === 'custom' ? 'bg-zinc-900 text-white shadow-xs' : 'hover:text-zinc-900'
+                }`}
+              >
+                Custom
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-[#EFE9DE] p-1 rounded-xl text-xs font-bold text-zinc-700">
-            <button
-              onClick={() => setTimeRange('7days')}
-              className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                timeRange === '7days' ? 'bg-zinc-900 text-white shadow-xs' : 'hover:text-zinc-900'
-              }`}
-            >
-              Last 7 Days
-            </button>
-            <button
-              onClick={() => setTimeRange('30days')}
-              className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                timeRange === '30days' ? 'bg-zinc-900 text-white shadow-xs' : 'hover:text-zinc-900'
-              }`}
-            >
-              30 Days
-            </button>
-          </div>
+          {showCustomPicker && (
+            <div className="flex flex-wrap items-center gap-3 bg-[#EFE9DE]/60 border border-[#E4DCCF] p-3 rounded-2xl text-xs font-bold text-zinc-700">
+              <label className="flex items-center gap-2">
+                From
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="bg-white border border-[#E4DCCF] rounded-lg px-2 py-1 text-xs font-medium"
+                />
+              </label>
+              <label className="flex items-center gap-2">
+                To
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="bg-white border border-[#E4DCCF] rounded-lg px-2 py-1 text-xs font-medium"
+                />
+              </label>
+              {!customStart || !customEnd ? (
+                <span className="text-zinc-400 font-medium">Select both dates to see the count</span>
+              ) : null}
+            </div>
+          )}
         </div>
 
         <div className="h-64 w-full pt-4">
