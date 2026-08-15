@@ -39,6 +39,9 @@ interface CandidateItem {
   summary: string;
   emailId?: string;
   avatarUrl: string;
+  educationDegree: string | null;
+  educationInstitution: string | null;
+  educationGpa: string | null;
 }
 
 interface CorrectionLogItem {
@@ -80,8 +83,8 @@ interface AppStateContextType {
   updateEmailCategory: (emailId: string, newCategory: string) => void;
   regenerateDraftText: (emailId: string) => Promise<void>;
   generateDraft: (emailId: string, guidance?: string) => Promise<void>;
-  resumeModalUrl: string | null;
-  setResumeModalUrl: (url: string | null) => void;
+  activeResumeCandidate: CandidateItem | null;
+  setActiveResumeCandidate: (candidate: CandidateItem | null) => void;
   activeResumeName: string | null;
   setActiveResumeName: (name: string | null) => void;
   toastMessage: string | null;
@@ -151,6 +154,9 @@ function mapBackendCandidates(rows: any[]): CandidateItem[] {
     summary: row.summary || 'No summary available.',
     emailId: row.email_id,
     avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(row.full_name || 'NA')}&background=F5C842&color=1E1E24&bold=true`,
+    educationDegree: row.education_degree || null,
+    educationInstitution: row.education_institution || null,
+    educationGpa: row.education_gpa || null,
   }));
 }
 
@@ -173,7 +179,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     replyTone: 'Friendly',
   });
 
-  const [resumeModalUrl, setResumeModalUrl] = useState<string | null>(null);
+  const [activeResumeCandidate, setActiveResumeCandidate] = useState<CandidateItem | null>(null);
   const [activeResumeName, setActiveResumeName] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -484,8 +490,8 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
         updateEmailCategory,
         regenerateDraftText,
         generateDraft,
-        resumeModalUrl,
-        setResumeModalUrl,
+        activeResumeCandidate,
+        setActiveResumeCandidate,
         activeResumeName,
         setActiveResumeName,
         toastMessage,

@@ -140,13 +140,20 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     prompt = ChatPromptTemplate.from_messages([
     ('system', '''You are an HR assistant extracting candidate information.
 
-    Read the email body and resume text below and extract the following:
+    Read the email body and resume text below and extract the following.
+    Only extract information that is explicitly stated in the text below.
+    Do not guess, infer, or fill in typical/plausible values.
+    If a field is not clearly present, respond with "N/A" for that field.
+
     - full_name: candidate's full name
     - candidate_email: candidate's email address
     - role_applied_for: the role they are applying for
     - years_of_experience: number of years of experience (number only)
     - skills: list of technical skills mentioned (comma separated)
-    - summary: a 1-2 sentence professional summary of the candidate
+    - summary: a 1-2 sentence professional summary of the candidate, based only on what is written
+    - education_degree: the degree name exactly as written (e.g. "B.S. Computer Science"). Use "N/A" if not mentioned.
+    - education_institution: the university/institution name exactly as written. Use "N/A" if not mentioned.
+    - education_gpa: the GPA/CGPA exactly as written, including scale if given (e.g. "3.8/4.0"). Use "N/A" if not mentioned anywhere in the resume — do not estimate or assume a typical GPA.
 
     Email Body: {email_body}
     Resume Text: {resume_text}
@@ -158,8 +165,11 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     years_of_experience: <value>
     skills: <comma separated skills>
     summary: <value>
+    education_degree: <value>
+    education_institution: <value>
+    education_gpa: <value>
     ''')
-    ])
+])
 
     chain = prompt | llm | parser
     result = chain.invoke({
@@ -174,23 +184,39 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
         "role_applied_for": None,
         "years_of_experience": None,
         "skills": [],
-        "summary":None
+        "summary": None,
+        "education_degree": None,
+        "education_institution": None,
+        "education_gpa": None,
     }
+
+    def _clean(value: str) -> str | None:
+        value = value.strip()
+        if value.upper() in ("N/A", "NA", "NONE", ""):
+            return None
+        return value
 
     for line in result.strip().split("\n"):
         if line.startswith("full_name:"):
-            info["full_name"] = line.replace("full_name:", "").strip()
+            info["full_name"] = _clean(line.replace("full_name:", ""))
         elif line.startswith("candidate_email:"):
-            info["candidate_email"] = line.replace("candidate_email:", "").strip()
+            info["candidate_email"] = _clean(line.replace("candidate_email:", ""))
         elif line.startswith("role_applied_for:"):
-            info["role_applied_for"] = line.replace("role_applied_for:", "").strip()
+            info["role_applied_for"] = _clean(line.replace("role_applied_for:", ""))
         elif line.startswith("years_of_experience:"):
-            info["years_of_experience"] = line.replace("years_of_experience:", "").strip()
+            info["years_of_experience"] = _clean(line.replace("years_of_experience:", ""))
         elif line.startswith("skills:"):
             skills_str = line.replace("skills:", "").strip()
-            info["skills"] = [s.strip() for s in skills_str.split(",")]
+            if skills_str.upper() not in ("N/A", "NA", "NONE", ""):
+                info["skills"] = [s.strip() for s in skills_str.split(",") if s.strip()]
         elif line.startswith("summary:"):
-            info["summary"] = line.replace("summary:", "").strip()
+            info["summary"] = _clean(line.replace("summary:", ""))
+        elif line.startswith("education_degree:"):
+            info["education_degree"] = _clean(line.replace("education_degree:", ""))
+        elif line.startswith("education_institution:"):
+            info["education_institution"] = _clean(line.replace("education_institution:", ""))
+        elif line.startswith("education_gpa:"):
+            info["education_gpa"] = _clean(line.replace("education_gpa:", ""))
 
     return info
 
@@ -207,6 +233,9 @@ def save_candidate(email_id, user_id, candidate_info, file_url):
         "resume_file_url": file_url,
         "years_of_experience": candidate_info.get("years_of_experience"),
         "summary": candidate_info.get("summary"),
+        "education_degree": candidate_info.get("education_degree"),
+        "education_institution": candidate_info.get("education_institution"),
+        "education_gpa": candidate_info.get("education_gpa"),
     }).execute()
 
     if result.data:

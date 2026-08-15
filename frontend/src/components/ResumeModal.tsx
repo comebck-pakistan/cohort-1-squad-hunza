@@ -1,11 +1,13 @@
 import React from 'react';
-import { X, FileText, Download, ExternalLink, CheckCircle, Award } from 'lucide-react';
+import { X, FileText, Download, ExternalLink, CheckCircle } from 'lucide-react';
 import { useAppState } from '../context/AppStateContext';
 
 export default function ResumeModal() {
-  const { resumeModalUrl, setResumeModalUrl, activeResumeName } = useAppState();
+  const { activeResumeCandidate, setActiveResumeCandidate } = useAppState();
 
-  if (!resumeModalUrl) return null;
+  if (!activeResumeCandidate) return null;
+
+  const candidate = activeResumeCandidate;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-fadeIn">
@@ -18,7 +20,7 @@ export default function ResumeModal() {
             </div>
             <div>
               <h3 className="font-extrabold text-base text-zinc-900">
-                {activeResumeName || 'Candidate Resume Document'}
+                {candidate.name} - {candidate.resumeFileName || 'Resume'}
               </h3>
               <p className="text-xs text-zinc-500 font-medium flex items-center gap-1">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Verified Supabase Storage Attachment
@@ -26,7 +28,7 @@ export default function ResumeModal() {
             </div>
           </div>
           <button
-            onClick={() => setResumeModalUrl(null)}
+            onClick={() => setActiveResumeCandidate(null)}
             className="w-8 h-8 rounded-full bg-zinc-200 text-zinc-700 hover:bg-zinc-900 hover:text-white flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
@@ -39,37 +41,59 @@ export default function ResumeModal() {
             <div className="flex items-start justify-between border-b border-zinc-200 pb-4">
               <div>
                 <h4 className="text-xl font-extrabold text-zinc-900">Curriculum Vitae & Experience</h4>
-                <p className="text-xs text-zinc-500 font-medium">Candidate Profile Overview</p>
+                <p className="text-xs text-zinc-500 font-medium">Candidate Profile Overview — {candidate.role}</p>
               </div>
-              <span className="bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold">
-                Match Score: 94%
-              </span>
             </div>
 
             <div className="space-y-3 text-sm text-zinc-700 leading-relaxed">
               <p className="font-semibold text-zinc-900">Executive Summary:</p>
               <p className="bg-amber-50/60 border border-amber-200 p-3.5 rounded-xl text-xs text-amber-950 font-medium">
-                Experienced engineering specialist with demonstrated track record in building high throughput AI pipelines, scalable microservices, and design systems. Skilled in Python, PyTorch, Node.js, and Docker.
+                {candidate.summary || 'No summary was extracted for this candidate.'}
               </p>
 
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="bg-white border border-zinc-200 p-3 rounded-xl">
-                  <p className="text-[10px] font-bold uppercase text-zinc-400">Education</p>
-                  <p className="text-xs font-bold text-zinc-900">B.S. Computer Science</p>
-                  <p className="text-[11px] text-zinc-500">Stanford University • 3.9 GPA</p>
-                </div>
-                <div className="bg-white border border-zinc-200 p-3 rounded-xl">
-                  <p className="text-[10px] font-bold uppercase text-zinc-400">Total Experience</p>
-                  <p className="text-xs font-bold text-zinc-900">4+ Years Industry</p>
-                  <p className="text-[11px] text-zinc-500">Senior Level Contributions</p>
-                </div>
+             <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="bg-white border border-zinc-200 p-3 rounded-xl">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Role Applied For</p>
+                <p className="text-xs font-bold text-zinc-900">{candidate.role || 'Not specified'}</p>
               </div>
+              <div className="bg-white border border-zinc-200 p-3 rounded-xl">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Total Experience</p>
+                <p className="text-xs font-bold text-zinc-900">
+                  {candidate.experienceYears ? `${candidate.experienceYears}+ Years` : 'Not specified'}
+                </p>
+              </div>
+              <div className="bg-white border border-zinc-200 p-3 rounded-xl">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Education</p>
+                <p className="text-xs font-bold text-zinc-900">
+                  {candidate.educationDegree || 'Not specified'}
+                </p>
+                <p className="text-[11px] text-zinc-500">
+                  {candidate.educationInstitution || ''}
+                  {candidate.educationGpa ? ` • GPA: ${candidate.educationGpa}` : ''}
+                </p>
+              </div>
+            </div>
+            
+              {candidate.skills && candidate.skills.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-[10px] font-bold uppercase text-zinc-400 mb-1.5">Skills</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {candidate.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="bg-white text-zinc-800 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-zinc-200"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Document link info */}
             <div className="p-3 bg-zinc-100 rounded-xl text-xs text-zinc-500 flex items-center justify-between">
-              <span className="truncate max-w-md font-mono text-[11px]">{resumeModalUrl}</span>
-              <span className="font-bold text-zinc-700">PDF • 1.4 MB</span>
+              <span className="truncate max-w-md font-mono text-[11px]">{candidate.resumeUrl}</span>
             </div>
           </div>
         </div>
@@ -77,7 +101,7 @@ export default function ResumeModal() {
         {/* Modal Footer Controls */}
         <div className="px-6 py-4 border-t border-[#EAE3D5] flex items-center justify-between bg-[#FBF9F5]">
           <a
-            href={resumeModalUrl}
+            href={candidate.resumeUrl}
             target="_blank"
             rel="noreferrer"
             className="text-xs font-bold text-zinc-600 hover:text-zinc-900 flex items-center gap-1.5"
@@ -87,13 +111,14 @@ export default function ResumeModal() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setResumeModalUrl(null)}
+              onClick={() => setActiveResumeCandidate(null)}
               className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-200 transition-all"
             >
               Close
             </button>
+
             <a
-              href={resumeModalUrl}
+              href={candidate.resumeUrl}
               download
               className="px-4 py-2 rounded-xl text-xs font-bold bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm flex items-center gap-1.5 transition-all"
             >

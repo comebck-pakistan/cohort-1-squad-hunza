@@ -34,6 +34,9 @@ export interface CandidateItem {
   summary: string;
   emailId?: string;
   avatarUrl: string;
+  educationDegree: string | null;
+  educationInstitution: string | null;
+  educationGpa: string | null;
 }
 
 export interface CorrectionLogItem {
@@ -196,6 +199,9 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     summary: '4+ years of experience constructing production LLM inference pipelines, fine-tuning Llama-3 models, and deploying vector indexes with Pinecone.',
     emailId: 'em-101',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    educationDegree: 'B.S. Computer Science',
+    educationInstitution: 'University of Washington',
+    educationGpa: '3.8',
   },
   {
     id: 'cand-2',
@@ -212,6 +218,9 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     summary: 'Senior Backend Specialist with expertise in distributed microservice architectures, high-throughput gRPC pipelines, and cloud native Kubernetes.',
     emailId: 'em-102',
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    educationDegree: 'M.S. Software Engineering',
+    educationInstitution: 'Georgia Tech',
+    educationGpa: '3.9',
   },
   {
     id: 'cand-3',
@@ -228,6 +237,9 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     summary: 'Lead UX/UI Designer who built scalable design systems for enterprise SaaS applications used by over 500k monthly active users.',
     emailId: 'em-104',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    educationDegree: 'B.A. Interaction Design',
+    educationInstitution: 'School of Visual Arts',
+    educationGpa: '3.7',
   },
   {
     id: 'cand-4',
@@ -244,6 +256,9 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     summary: 'Applied Machine Learning researcher with emphasis on multimodal embeddings and real-time computer vision inference.',
     emailId: 'em-105',
     avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+    educationDegree: 'M.S. Computer Vision',
+    educationInstitution: 'University of Michigan',
+    educationGpa: '3.9',
   },
 ];
 

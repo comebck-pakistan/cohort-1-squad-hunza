@@ -5,7 +5,7 @@ import { useAppState } from '../context/AppStateContext';
 import { Search, Filter, FileText, Mail, Sparkles, User, Briefcase, Calendar } from 'lucide-react';
 
 export default function Candidates() {
-  const { candidates, jobRoles, setResumeModalUrl, setActiveResumeName } = useAppState();
+  const { candidates, jobRoles, setActiveResumeCandidate } = useAppState();
 
   const [selectedRole, setSelectedRole] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -23,8 +23,7 @@ export default function Candidates() {
   });
 
   const handleOpenResume = (candidate: any) => {
-    setResumeModalUrl(candidate.resumeUrl);
-    setActiveResumeName(`${candidate.name} - ${candidate.resumeFileName}`);
+    setActiveResumeCandidate(candidate);
   };
 
   return (

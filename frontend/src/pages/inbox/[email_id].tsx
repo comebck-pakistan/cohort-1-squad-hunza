@@ -22,6 +22,7 @@ export default function EmailDetail() {
   const { email_id } = router.query;
   const {
     emails,
+    candidates,
     categories,
     approveDraft,
     discardDraft,
@@ -29,9 +30,9 @@ export default function EmailDetail() {
     updateEmailCategory,
     regenerateDraftText,
     generateDraft,
-    setResumeModalUrl,
-    setActiveResumeName,
-  } = useAppState();
+    setActiveResumeCandidate,
+    showToast,
+} = useAppState();
 
   const email = emails.find((e) => e.id === email_id);
 
@@ -77,11 +78,13 @@ export default function EmailDetail() {
   };
 
   const handleOpenResume = () => {
-    setResumeModalUrl(
-      'https://wanvhvtdpynebwlvorpw.supabase.co/storage/v1/object/public/resumes/john_smith_resume.pdf'
-    );
-    setActiveResumeName(email.attachmentName || 'Candidate Resume');
-  };
+    const matchedCandidate = candidates.find((c) => c.emailId === email.id);
+    if (matchedCandidate) {
+      setActiveResumeCandidate(matchedCandidate);
+    } else {
+      showToast('No resume found for this email.');
+    }
+};
 
   return (
     <Layout>
