@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import Layout from '../components/Layout';
 import { useAppState } from '../context/AppStateContext';
 import { History, Filter, FileEdit, Tag, Calendar, UserCheck } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useRouter } from 'next/router';
 
 export default function ActivityLog() {
   const { corrections } = useAppState();
+
+  const { session, loading } = useAuth();
+const router = useRouter(); // skip if already imported/declared
+
+useEffect(() => {
+  if (!loading && !session) router.replace('/');
+}, [loading, session, router]);
+
+if (loading) return <div>Loading...</div>;
+if (!session) return null;
+
   const [activeTab, setActiveTab] = useState<'Draft Edit' | 'Category Fix'>('Draft Edit');
   const [dateFilter, setDateFilter] = useState<string>('All');
 

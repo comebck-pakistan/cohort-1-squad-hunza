@@ -6,7 +6,7 @@ import { apiService } from '../lib/api';
 
 export default function ConnectGmail() {
   const router = useRouter();
-  const { setGmailConnected, showToast } = useAppState();
+  const { setGmailConnected, gmailAddress, showToast } = useAppState();
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
 
@@ -76,14 +76,14 @@ export default function ConnectGmail() {
             <div>
               <h3 className="font-extrabold text-emerald-950 text-base">✅ Gmail Connected Successfully</h3>
               <p className="text-xs text-emerald-700 font-medium mt-1">
-                Authorized for <span className="font-bold">sarah.jenkins@crextio.hr</span>
+                Authorized for <span className="font-bold">{gmailAddress || 'your account'}</span>
               </p>
             </div>
             <button
-              onClick={() => router.push('/onboarding')}
+              onClick={() => router.push('/dashboard')}
               className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
             >
-              <span>Continue to Setup</span>
+              <span>Go to Dashboard</span>
               <ArrowRight className="w-4 h-4 text-amber-400" />
             </button>
           </div>

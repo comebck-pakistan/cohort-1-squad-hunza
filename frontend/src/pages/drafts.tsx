@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { useAppState } from '../context/AppStateContext';
 import confetti from 'canvas-confetti';
+import { useAuth } from '../hooks/useAuth';
+import { useRouter } from 'next/router';
+
 import {
   CheckCircle2,
   Edit3,
@@ -21,7 +24,15 @@ export default function DraftQueue() {
   const pendingEmails = emails.filter(
     (e) => e.draftReply && e.draftReply.status === 'pending'
   );
+  const { session, loading } = useAuth();
+const router = useRouter(); // skip if already imported/declared
 
+useEffect(() => {
+  if (!loading && !session) router.replace('/');
+}, [loading, session, router]);
+
+if (loading) return <div>Loading...</div>;
+if (!session) return null;
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedText, setEditedText] = useState<string>('');

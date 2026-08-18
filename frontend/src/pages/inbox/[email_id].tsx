@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { useAppState } from '../../context/AppStateContext';
+import { useAuth } from '../../hooks/useAuth';
+
 import {
   ArrowLeft,
   Paperclip,
@@ -32,13 +34,23 @@ export default function EmailDetail() {
     generateDraft,
     setActiveResumeCandidate,
     showToast,
-} = useAppState();
+  } = useAppState();
+
+  const { session, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !session) router.replace('/');
+  }, [loading, session, router]);
 
   const email = emails.find((e) => e.id === email_id);
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [draftText, setDraftText] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+
+  if (loading) return <div>Loading...</div>;
+  if (!session) return null;
+
 
   // Sync draft text when email changes
   React.useEffect(() => {

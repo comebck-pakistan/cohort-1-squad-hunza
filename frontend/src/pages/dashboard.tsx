@@ -5,6 +5,8 @@ import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabase';
 import { useAppState } from '../context/AppStateContext';
 import { apiService } from '../lib/api';
+import { useAuth } from '../hooks/useAuth';
+
 import {
   BarChart,
   Bar,
@@ -28,16 +30,21 @@ import {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { session, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !session) router.replace('/');
+  }, [loading, session, router]);
+
   const { emails, candidates, totalEmailCount } = useAppState();
+
   type PeriodOption = 'today' | '7days' | '30days' | 'custom';
-const [timeRange, setTimeRange] = useState<PeriodOption>('7days');
-const [customStart, setCustomStart] = useState<string>('');
-const [customEnd, setCustomEnd] = useState<string>('');
-const [showCustomPicker, setShowCustomPicker] = useState(false);
-const [periodCount, setPeriodCount] = useState<number | null>(null);
-const [periodCountLoading, setPeriodCountLoading] = useState(false);
+  const [timeRange, setTimeRange] = useState<PeriodOption>('7days');
+  const [customStart, setCustomStart] = useState<string>('');
+  const [customEnd, setCustomEnd] = useState<string>('');
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
+  const [periodCount, setPeriodCount] = useState<number | null>(null);
+  const [periodCountLoading, setPeriodCountLoading] = useState(false);
 
 const getPeriodRange = (period: PeriodOption): { start?: string; end?: string } => {
   const now = new Date();
@@ -95,23 +102,6 @@ const periodLabel = {
   '30days': 'Last 30 Days',
   custom: customStart && customEnd ? `${customStart} → ${customEnd}` : 'Custom Range',
 }[timeRange];
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-      if (!session) router.push('/login');
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (!session) router.push('/login');
-    });
-
-    return () => subscription.unsubscribe();
-  }, [router]);
 
   const activeChartData = useMemo(() => {
     const normalized = emails.map((email) => ({

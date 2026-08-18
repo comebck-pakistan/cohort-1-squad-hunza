@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';import Layout from '../components/Layout';
+import React, { useState, useEffect } from 'react';
+import Layout from '../components/Layout';
 import { useAppState } from '../context/AppStateContext';
+import { useRouter } from 'next/router';
+import { supabase } from '../lib/supabase';
+import { apiService } from '../lib/api';
+import { useAuth } from '../hooks/useAuth';
+
 import {
   Settings,
   Layers,
@@ -29,6 +35,55 @@ export default function SettingsPage() {
     showToast,
 } = useAppState();
 
+const router = useRouter();
+const [disconnecting, setDisconnecting] = useState(false);
+const { session, loading } = useAuth();
+
+useEffect(() => {
+  if (!loading && !session) router.replace('/');
+}, [loading, session, router]);
+
+if (loading) return <div>Loading...</div>;
+if (!session) return null;
+
+const handleDisconnect = async () => {
+    if (!confirm('Disconnect Gmail? You will be signed out and need to log in again.')) return;
+    setDisconnecting(true);
+    try {
+      const status = await apiService.getGmailStatus();
+      const active = Array.isArray(status) ? status.find((c: any) => c.is_active) : null;
+      if (active) {
+        await apiService.disconnectGmail(active.id);
+      }
+      await supabase.auth.signOut();
+      router.replace('/');
+    } catch (err) {
+      console.error('Disconnect failed', err);
+      showToast('Failed to disconnect Gmail.');
+      setDisconnecting(false);
+    }
+};
+
+const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+const [deleting, setDeleting] = useState(false);
+
+const handleDeleteConnection = async () => {
+    setDeleting(true);
+    try {
+      const status = await apiService.getGmailStatus();
+      const active = Array.isArray(status) ? status.find((c: any) => c.is_active) : null;
+      if (active) {
+        await apiService.deleteGmailConnectionAndData(active.id);
+      }
+      await supabase.auth.signOut();
+      router.replace('/');
+    } catch (err) {
+      console.error('Delete connection failed', err);
+      showToast('Failed to delete connection.');
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+};
 const [newCatInput, setNewCatInput] = useState<string>('');
 const [newRoleInput, setNewRoleInput] = useState<string>('');
 const [selectedTone, setSelectedTone] = useState<'Formal' | 'Friendly' | 'Brief'>(
@@ -171,6 +226,41 @@ return (
             )}
           </div>
 
+          {isGmailConnected && (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete Connection & All Data
+          </button>
+        )}
+
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm">
+            <div className="bg-[#FBF9F5] border border-[#EAE3D5] rounded-3xl w-full max-w-md p-6 space-y-4 shadow-nixtio-lg">
+              <h3 className="text-base font-extrabold text-rose-700">Delete Connection & All Data?</h3>
+              <p className="text-xs text-zinc-600 font-medium leading-relaxed">
+                This will permanently delete your Gmail connection and <span className="font-bold">every email, candidate, and resume</span> associated with it from the database. This cannot be undone. If you sign in again later, your previous data will not return.
+              </p>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConnection}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-all disabled:opacity-60"
+                >
+                  {deleting ? 'Deleting...' : 'Yes, Delete Everything'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
           <div className="p-4 bg-[#EFE9DE]/60 border border-[#E8E1D2] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="text-xs font-extrabold text-zinc-900">Connected Account:</p>
@@ -179,14 +269,16 @@ return (
 
             {isGmailConnected ? (
               <button
-                onClick={() => setGmailConnected(false)}
-                className="bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5"
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+                className="bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 disabled:opacity-60"
               >
-                <LogOut className="w-3.5 h-3.5 text-rose-600" /> Disconnect Gmail
+                <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                {disconnecting ? 'Disconnecting...' : 'Disconnect Gmail'}
               </button>
             ) : (
               <button
-                onClick={() => setGmailConnected(true)}
+                onClick={() => router.push('/connect-gmail')}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all"
               >
                 Reconnect Gmail

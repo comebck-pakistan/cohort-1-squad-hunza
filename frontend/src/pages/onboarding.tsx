@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { apiService } from '../lib/api';
+
 import {
   Check,
   Plus,
@@ -50,17 +52,30 @@ export default function Onboarding() {
     setNewRoleInput('');
   };
 
+  const persistOnboardingSettings = async (payload: {
+    categories: string[];
+    roles: string[];
+    job_descriptions: Record<string, string>;
+    reply_tone: string;
+}) => {
+    try {
+      await apiService.saveSettings(payload);
+    } catch (err) {
+      console.error('Failed to save onboarding settings', err);
+      showToast('Failed to save your preferences.');
+    }
+  };
+
   const handleFinishSetup = async () => {
-    updateOnboarding({
-      completed: true,
+    await persistOnboardingSettings({
       categories: selectedCategories,
       roles: jobRoles,
-      jobDescriptions: { [selectedRoleForDesc]: jobDescriptionText },
-      replyTone,
+      job_descriptions: { [selectedRoleForDesc]: jobDescriptionText },
+      reply_tone: replyTone,
     });
-    showToast('🎉 Onboarding setup complete! Welcome to Crextio.');
-    router.push('/dashboard');
-  };
+    showToast('🎉 Onboarding setup complete! Now connect your Gmail.');
+    router.push('/connect-gmail');
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#EFE9DE]">

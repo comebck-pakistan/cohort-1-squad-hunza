@@ -4,6 +4,8 @@ import Layout from '../components/Layout';
 import { useAppState } from '../context/AppStateContext';
 import { Sparkles, Send, Bot, User, ArrowUpRight, MessageSquare } from 'lucide-react';
 import { apiService } from '../lib/api';
+import { useAuth } from '../hooks/useAuth';
+import { useRouter } from 'next/router';
 
 interface ChatMessage {
   id: string;
@@ -17,7 +19,15 @@ interface ChatMessage {
 
 export default function ChatAssistant() {
   const { emails, candidates } = useAppState();
-  
+  const { session, loading } = useAuth();
+const router = useRouter(); // skip if already imported/declared
+
+useEffect(() => {
+  if (!loading && !session) router.replace('/');
+}, [loading, session, router]);
+
+if (loading) return <div>Loading...</div>;
+if (!session) return null;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);

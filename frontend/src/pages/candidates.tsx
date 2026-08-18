@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useAppState } from '../context/AppStateContext';
 import { Search, Filter, FileText, Mail, Sparkles, User, Briefcase, Calendar } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useRouter } from 'next/router';
 
 export default function Candidates() {
   const { candidates, jobRoles, setActiveResumeCandidate } = useAppState();
+const { session, loading } = useAuth();
+const router = useRouter(); // skip if already imported/declared
 
+useEffect(() => {
+  if (!loading && !session) router.replace('/');
+}, [loading, session, router]);
+
+if (loading) return <div>Loading...</div>;
+if (!session) return null;
   const [selectedRole, setSelectedRole] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
 

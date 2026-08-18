@@ -148,4 +148,11 @@ async saveSettings(payload: {
   return res.data;
 },
 
+async disconnectGmail(connectionId: string) {
+  await client.post(`/gmail/${connectionId}/disconnect`);
+},
+
+async deleteGmailConnectionAndData(connectionId: string) {
+  await client.delete(`/gmail/${connectionId}/delete-all-data`);
+},
 };

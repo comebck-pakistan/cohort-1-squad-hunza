@@ -78,3 +78,12 @@ def update_history_id(connection_id: str, history_id: str) -> None:
         .update({"history_id": history_id})\
         .eq("id", connection_id)\
         .execute()
+
+def delete_connection_and_data(connection_id: str, user_id: str) -> bool:
+    db = get_supabase()
+    connection = db.table("gmail_connections").select("*").eq("id", connection_id).eq("user_id", user_id).limit(1).execute()
+    if not connection.data:
+        return False
+    db.table("emails").delete().eq("user_id", user_id).execute()
+    db.table("gmail_connections").delete().eq("id", connection_id).eq("user_id", user_id).execute()
+    return True

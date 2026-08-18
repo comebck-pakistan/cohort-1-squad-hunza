@@ -63,3 +63,9 @@ async def gmail_pubsub_webhook(request: Request, background_tasks: BackgroundTas
     await service.handle_pubsub_notification(body, background_tasks)
     return {"status": "ok"}
 
+@router.delete("/{connection_id}/delete-all-data")
+async def delete_connection_and_data(connection_id: str, current_user: dict = Depends(get_current_user)):
+    success = repo.delete_connection_and_data(connection_id, current_user["id"])
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connection not found")
+    return {"status": "deleted"}
