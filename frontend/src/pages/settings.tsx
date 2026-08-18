@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import Layout from '../components/Layout';
+import React, { useState, useEffect } from 'react';import Layout from '../components/Layout';
 import { useAppState } from '../context/AppStateContext';
 import {
   Settings,
@@ -33,8 +32,12 @@ export default function SettingsPage() {
 const [newCatInput, setNewCatInput] = useState<string>('');
 const [newRoleInput, setNewRoleInput] = useState<string>('');
 const [selectedTone, setSelectedTone] = useState<'Formal' | 'Friendly' | 'Brief'>(
-    (replyTone as 'Formal' | 'Friendly' | 'Brief') || 'Friendly'
+  (replyTone as 'Formal' | 'Friendly' | 'Brief') || 'Friendly'
 );
+
+useEffect(() => {
+  setSelectedTone((replyTone as 'Formal' | 'Friendly' | 'Brief') || 'Friendly');
+}, [replyTone]);
 
   const handleAddCat = () => {
     if (!newCatInput.trim()) return;
@@ -53,7 +56,7 @@ const [selectedTone, setSelectedTone] = useState<'Formal' | 'Friendly' | 'Brief'
     showToast('⚙️ Settings & Reply preferences saved successfully!');
 };
 
-  return (
+return (
     <Layout>
       {/* Page Header */}
       <div>
