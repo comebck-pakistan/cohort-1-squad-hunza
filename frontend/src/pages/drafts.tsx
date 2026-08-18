@@ -88,11 +88,25 @@ export default function DraftQueue() {
         </div>
 
         {pendingEmails.length > 0 && (
-          <div className="bg-amber-400 text-zinc-950 font-extrabold text-xs px-4 py-2 rounded-2xl shadow-sm flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-zinc-950" />
-            <span>
-              Draft {currentIndex + 1} of {pendingEmails.length} pending
-            </span>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="bg-amber-400 text-zinc-950 font-extrabold text-xs px-4 py-2 rounded-2xl shadow-sm flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-zinc-950" />
+              <span>
+                Draft {currentIndex + 1} of {pendingEmails.length} pending
+              </span>
+            </div>
+
+            <select
+              value={currentIndex}
+              onChange={(e) => setCurrentIndex(Number(e.target.value))}
+              className="bg-[#FBF9F5] border border-[#EAE3D5] rounded-2xl px-4 py-2.5 text-xs font-bold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs cursor-pointer max-w-[240px]"
+            >
+              {pendingEmails.map((email, index) => (
+                <option key={email.id} value={index}>
+                  {index + 1}. {email.senderName} — {email.subject}
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>
