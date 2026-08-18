@@ -10,7 +10,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-GROQ_MODEL = "GPT OSS 20B"
+GROQ_MODEL = "openai/gpt-oss-20b"
 GPT_MODEL=""
 # similarity threshold for duplicate question detection
 # if a question matches the job posting above this score, flag as duplicate
