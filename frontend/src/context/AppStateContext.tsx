@@ -98,27 +98,12 @@ interface AppStateContextType {
 
 const AppStateContext = createContext<AppStateContextType | undefined>(undefined);
 
-const DEFAULT_CATEGORIES = [
-  'New Applicant',
-  'Candidate Follow-up',
-  'Interview Scheduling',
-  'Interview Reschedule',
-  'Documents Submitted',
-  'Offer Acceptance',
-  'Offer Rejection',
-  'General Inquiry',
-  'Referral',
-  'Candidate Withdrawal',
+const SEED_CATEGORIES = [
+  'New Applicant', 'Candidate Follow-up', 'Interview Scheduling', 'Interview Reschedule',
+  'Documents Submitted', 'Offer Acceptance', 'Offer Rejection', 'General Inquiry',
+  'Referral', 'Candidate Withdrawal', 'Spam'
 ];
-
-const DEFAULT_ROLES = [
-  'AI Engineer',
-  'Backend Developer',
-  'Frontend Engineer',
-  'UX/UI Designer',
-  'Product Manager',
-  'DevOps Specialist',
-];
+const SEED_ROLES = ['AI Engineer', 'Backend Developer', 'Frontend Engineer', 'UX/UI Designer', 'Product Manager', 'DevOps Specialist'];
 
 export const mapBackendEmails = (emails: any[]): EmailItem[] =>
   emails.map((email) => ({
@@ -449,10 +434,27 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
 
         setEmails(emailsWithDrafts);
         setCandidates(mapBackendCandidates(Array.isArray(candidatesData) ? candidatesData : []));
-        setCategories(Array.isArray(settingsData.categories) ? settingsData.categories : []);
-        setJobRoles(Array.isArray(settingsData.job_roles) ? settingsData.job_roles : []);
+        const isFirstTimeUser = !settingsData.updated_at;
+        const resolvedCategories = Array.isArray(settingsData.categories) && settingsData.categories.length > 0
+          ? settingsData.categories
+          : SEED_CATEGORIES;
+        const resolvedRoles = Array.isArray(settingsData.job_roles) && settingsData.job_roles.length > 0
+          ? settingsData.job_roles
+          : SEED_ROLES;
+
+        setCategories(resolvedCategories);
+        setJobRoles(resolvedRoles);
         setJobDescriptions(settingsData.job_descriptions || {});
         setReplyToneState(settingsData.reply_tone || 'Friendly');
+
+        if (isFirstTimeUser) {
+          apiService.saveSettings({
+            categories: resolvedCategories,
+            roles: resolvedRoles,
+            job_descriptions: settingsData.job_descriptions || {},
+            reply_tone: settingsData.reply_tone || 'Friendly',
+          }).catch((err) => console.error('Failed to seed default settings', err));
+        }
         setTotalEmailCount(emailCount);
         setGmailConnected(Array.isArray(gmailStatus) && gmailStatus.length > 0);
         

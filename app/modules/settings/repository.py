@@ -3,7 +3,7 @@ from app.core.supabase_client import get_supabase
 
 def get_settings_by_user_id(user_id: str) -> dict | None:
     db = get_supabase()
-    res = db.table("user_settings").select("*").eq("user_id", user_id).limit(1).execute()
+    res = db.table("user_settings").select("*").eq("user_id", user_id).order("updated_at", desc=True).limit(1).execute()
     return res.data[0] if res.data else None
 
 
