@@ -74,6 +74,9 @@ interface AppStateContextType {
   setTotalEmailCount: (count: number) => void;
   corrections: CorrectionLogItem[];
   categories: string[];
+  replyTone: string;
+  updateReplyTone: (tone: string) => void;
+  jobDescriptions: Record<string, string>;
   jobRoles: string[];
   addCategory: (cat: string) => void;
   removeCategory: (cat: string) => void;
@@ -165,19 +168,18 @@ function mapBackendCandidates(rows: any[]): CandidateItem[] {
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isGmailConnected, setGmailConnected] = useState<boolean>(false);
   const [gmailAddress, setGmailAddress] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
-  const [jobRoles, setJobRoles] = useState<string[]>(DEFAULT_ROLES);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [jobDescriptions, setJobDescriptions] = useState<Record<string, string>>({});
+  const [replyTone, setReplyToneState] = useState<string>('Friendly');
+  const [jobRoles, setJobRoles] = useState<string[]>([]);
   const [emails, setEmails] = useState<EmailItem[]>([]);
   const [candidates, setCandidates] = useState<CandidateItem[]>([]);
   const [corrections, setCorrections] = useState<CorrectionLogItem[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingState>({
     completed: false,
-    categories: DEFAULT_CATEGORIES,
-    roles: DEFAULT_ROLES,
-    jobDescriptions: {
-      'AI Engineer': 'Seeking AI Engineer with PyTorch, RAG, and LLM fine-tuning experience.',
-      'Backend Developer': 'Senior Golang / Node.js developer needed for high scale APIs.',
-    },
+    categories: [],
+    roles: [],
+    jobDescriptions: {},
     replyTone: 'Friendly',
   });
 
@@ -197,25 +199,57 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const addCategory = (cat: string) => {
-    if (!cat || categories.includes(cat)) return;
-    setCategories((prev) => [...prev, cat]);
-    showToast(`Category "${cat}" added successfully`);
+  if (!cat || categories.includes(cat)) return;
+  const updated = [...categories, cat];
+  setCategories(updated);
+  persistSettings({ categories: updated });
+};
+
+const removeCategory = (cat: string) => {
+  const updated = categories.filter((c) => c !== cat);
+  setCategories(updated);
+  persistSettings({ categories: updated });
+};
+
+const addJobRole = (role: string) => {
+  if (!role || jobRoles.includes(role)) return;
+  const updated = [...jobRoles, role];
+  setJobRoles(updated);
+  persistSettings({ jobRoles: updated });
+};
+
+const removeJobRole = (role: string) => {
+  const updated = jobRoles.filter((r) => r !== role);
+  setJobRoles(updated);
+  const updatedDescriptions = { ...jobDescriptions };
+  delete updatedDescriptions[role];
+  setJobDescriptions(updatedDescriptions);
+  persistSettings({ jobRoles: updated, jobDescriptions: updatedDescriptions });
+};
+
+const updateReplyTone = (tone: string) => {
+  setReplyToneState(tone);
+  persistSettings({ replyTone: tone });
   };
 
-  const removeCategory = (cat: string) => {
-    setCategories((prev) => prev.filter((c) => c !== cat));
-    showToast(`Category "${cat}" removed`);
+  const persistSettings = async (overrides: {
+  categories?: string[];
+  jobRoles?: string[];
+  jobDescriptions?: Record<string, string>;
+  replyTone?: string;
+}) => {
+  const payload = {
+    categories: overrides.categories ?? categories,
+    roles: overrides.jobRoles ?? jobRoles,
+    job_descriptions: overrides.jobDescriptions ?? jobDescriptions,
+    reply_tone: overrides.replyTone ?? replyTone,
   };
-
-  const addJobRole = (role: string) => {
-    if (!role || jobRoles.includes(role)) return;
-    setJobRoles((prev) => [...prev, role]);
-    showToast(`Role "${role}" added`);
-  };
-
-  const removeJobRole = (role: string) => {
-    setJobRoles((prev) => prev.filter((r) => r !== role));
-    showToast(`Role "${role}" removed`);
+  try {
+    await apiService.saveSettings(payload);
+  } catch (err) {
+    console.error('Failed to save settings', err);
+    showToast('Failed to save settings.');
+  }
   };
 
   const approveDraft = async (emailId: string) => {
@@ -376,13 +410,14 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
           return;
         }
 
-        const [emailsData, gmailStatus, activityData, allDrafts,candidatesData,emailCount] = await Promise.all([
+        const [emailsData, gmailStatus, activityData, allDrafts,candidatesData,emailCount,settingsData] = await Promise.all([
           apiService.getEmails(),
           apiService.getGmailStatus(),
           apiService.getActivityLog(),
           apiService.getAllDrafts(),
           apiService.getCandidates(),
           apiService.getEmailCount(),
+          apiService.getSettings(),
         ]);
 
         if (!mounted) return;
@@ -414,6 +449,10 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
 
         setEmails(emailsWithDrafts);
         setCandidates(mapBackendCandidates(Array.isArray(candidatesData) ? candidatesData : []));
+        setCategories(Array.isArray(settingsData.categories) ? settingsData.categories : []);
+        setJobRoles(Array.isArray(settingsData.job_roles) ? settingsData.job_roles : []);
+        setJobDescriptions(settingsData.job_descriptions || {});
+        setReplyToneState(settingsData.reply_tone || 'Friendly');
         setTotalEmailCount(emailCount);
         setGmailConnected(Array.isArray(gmailStatus) && gmailStatus.length > 0);
         
@@ -486,6 +525,9 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
         setTotalEmailCount,
         corrections,
         categories,
+        replyTone,
+        updateReplyTone,
+        jobDescriptions,
         jobRoles,
         addCategory,
         removeCategory,

@@ -100,11 +100,6 @@ export const apiService = {
   return res.data;
   },
 
-  // Save Onboarding / Settings
-  async saveSettings(settingsData: any) {
-    const res = await client.post(`/settings/save`, settingsData);
-    return res.data;
-  },
   async getActivityLog() {
     const res = await client.get(`/activity`);
     return res.data;
@@ -136,4 +131,21 @@ async getEmailCategoryCount(category: string) {
   const res = await client.get('/emails/count-by-category', { params: { category } });
   return res.data.count;
 },
+
+async getSettings() {
+  const res = await client.get('/settings');
+  return res.data;
+},
+
+  // Save Onboarding / Settings
+async saveSettings(payload: {
+  categories: string[];
+  roles: string[];
+  job_descriptions: Record<string, string>;
+  reply_tone: string;
+}) {
+  const res = await client.post('/settings/save', payload);
+  return res.data;
+},
+
 };

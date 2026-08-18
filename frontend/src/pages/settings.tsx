@@ -25,16 +25,16 @@ export default function SettingsPage() {
     isGmailConnected,
     setGmailConnected,
     gmailAddress,
-    onboarding,
-    updateOnboarding,
+    replyTone,
+    updateReplyTone,
     showToast,
-  } = useAppState();
+} = useAppState();
 
-  const [newCatInput, setNewCatInput] = useState<string>('');
-  const [newRoleInput, setNewRoleInput] = useState<string>('');
-  const [selectedTone, setSelectedTone] = useState<'Formal' | 'Friendly' | 'Brief'>(
-    onboarding.replyTone || 'Friendly'
-  );
+const [newCatInput, setNewCatInput] = useState<string>('');
+const [newRoleInput, setNewRoleInput] = useState<string>('');
+const [selectedTone, setSelectedTone] = useState<'Formal' | 'Friendly' | 'Brief'>(
+    (replyTone as 'Formal' | 'Friendly' | 'Brief') || 'Friendly'
+);
 
   const handleAddCat = () => {
     if (!newCatInput.trim()) return;
@@ -49,9 +49,9 @@ export default function SettingsPage() {
   };
 
   const handleSavePreferences = () => {
-    updateOnboarding({ replyTone: selectedTone });
+    updateReplyTone(selectedTone);
     showToast('⚙️ Settings & Reply preferences saved successfully!');
-  };
+};
 
   return (
     <Layout>
