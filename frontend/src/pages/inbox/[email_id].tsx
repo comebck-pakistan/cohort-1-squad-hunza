@@ -23,17 +23,9 @@ export default function EmailDetail() {
   const router = useRouter();
   const { email_id } = router.query;
   const {
-    emails,
-    candidates,
-    categories,
-    approveDraft,
-    discardDraft,
-    updateDraftText,
-    updateEmailCategory,
-    regenerateDraftText,
-    generateDraft,
-    setActiveResumeCandidate,
-    showToast,
+    emails, candidates, categories, approveDraft, discardDraft,
+    updateDraftText, updateEmailCategory, regenerateDraftText,
+    generateDraft, setActiveResumeCandidate, showToast,
   } = useAppState();
 
   const { session, loading } = useAuth();
@@ -47,19 +39,17 @@ export default function EmailDetail() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [draftText, setDraftText] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [guidanceText, setGuidanceText] = useState<string>('');  // ← moved up
 
-  if (loading) return <div>Loading...</div>;
-  if (!session) return null;
-
-
-  // Sync draft text when email changes
-  React.useEffect(() => {
+  React.useEffect(() => {                                        // ← moved up
     if (email && email.draftReply) {
       setDraftText(email.draftReply.text);
     }
   }, [email]);
 
-  const [guidanceText, setGuidanceText] = useState<string>('');
+  // NOW it's safe to conditionally return
+  if (loading) return <div>Loading...</div>;
+  if (!session) return null;
 
   const handleGenerateDraft = async () => {
     if (!email) return;
@@ -73,10 +63,7 @@ export default function EmailDetail() {
       <Layout>
         <div className="text-center py-20 space-y-4">
           <p className="text-sm font-bold text-zinc-500">Email document not found.</p>
-          <Link
-            href="/inbox"
-            className="inline-flex items-center gap-2 bg-zinc-900 text-white font-bold px-4 py-2 rounded-xl text-xs"
-          >
+          <Link href="/inbox" className="inline-flex items-center gap-2 bg-zinc-900 text-white font-bold px-4 py-2 rounded-xl text-xs">
             <ArrowLeft className="w-4 h-4" /> Return to Inbox
           </Link>
         </div>
@@ -96,7 +83,9 @@ export default function EmailDetail() {
     } else {
       showToast('No resume found for this email.');
     }
-};
+  };
+
+ 
 
   return (
     <Layout>
