@@ -39,11 +39,20 @@ const router = useRouter();
 const [disconnecting, setDisconnecting] = useState(false);
 const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 const [deleting, setDeleting] = useState(false);
+const [newCatInput, setNewCatInput] = useState<string>('');
+const [newRoleInput, setNewRoleInput] = useState<string>('');
+const [selectedTone, setSelectedTone] = useState<'Formal' | 'Friendly' | 'Brief'>(
+  (replyTone as 'Formal' | 'Friendly' | 'Brief') || 'Friendly'
+);
 const { session, loading } = useAuth();
 
 useEffect(() => {
   if (!loading && !session) router.replace('/');
 }, [loading, session, router]);
+
+useEffect(() => {
+  setSelectedTone((replyTone as 'Formal' | 'Friendly' | 'Brief') || 'Friendly');
+}, [replyTone]);
 
 if (loading) return <div>Loading...</div>;
 if (!session) return null;
@@ -83,15 +92,6 @@ const handleDeleteConnection = async () => {
       setShowDeleteConfirm(false);
     }
 };
-const [newCatInput, setNewCatInput] = useState<string>('');
-const [newRoleInput, setNewRoleInput] = useState<string>('');
-const [selectedTone, setSelectedTone] = useState<'Formal' | 'Friendly' | 'Brief'>(
-  (replyTone as 'Formal' | 'Friendly' | 'Brief') || 'Friendly'
-);
-
-useEffect(() => {
-  setSelectedTone((replyTone as 'Formal' | 'Friendly' | 'Brief') || 'Friendly');
-}, [replyTone]);
 
   const handleAddCat = () => {
     if (!newCatInput.trim()) return;
