@@ -37,6 +37,8 @@ export default function SettingsPage() {
 
 const router = useRouter();
 const [disconnecting, setDisconnecting] = useState(false);
+const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+const [deleting, setDeleting] = useState(false);
 const { session, loading } = useAuth();
 
 useEffect(() => {
@@ -63,9 +65,6 @@ const handleDisconnect = async () => {
       setDisconnecting(false);
     }
 };
-
-const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-const [deleting, setDeleting] = useState(false);
 
 const handleDeleteConnection = async () => {
     setDeleting(true);

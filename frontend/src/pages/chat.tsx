@@ -20,18 +20,16 @@ interface ChatMessage {
 export default function ChatAssistant() {
   const { emails, candidates } = useAppState();
   const { session, loading } = useAuth();
-const router = useRouter(); // skip if already imported/declared
+  const router = useRouter(); // skip if already imported/declared
 
-useEffect(() => {
-  if (!loading && !session) router.replace('/');
-}, [loading, session, router]);
-
-if (loading) return <div>Loading...</div>;
-if (!session) return null;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
-  
+
+  useEffect(() => {
+    if (!loading && !session) router.replace('/');
+  }, [loading, session, router]);
+
   useEffect(() => {
     const loadHistory = async () => {
       try {
@@ -57,6 +55,9 @@ if (!session) return null;
     };
     loadHistory();
   }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (!session) return null;
   
   const starterSuggestions = [
     'How many emails did I receive today?',

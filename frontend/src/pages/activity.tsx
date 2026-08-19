@@ -9,20 +9,20 @@ export default function ActivityLog() {
   const { corrections } = useAppState();
 
   const { session, loading } = useAuth();
-const router = useRouter(); // skip if already imported/declared
-
-useEffect(() => {
-  if (!loading && !session) router.replace('/');
-}, [loading, session, router]);
-
-if (loading) return <div>Loading...</div>;
-if (!session) return null;
+  const router = useRouter(); // skip if already imported/declared
 
   const [activeTab, setActiveTab] = useState<'Draft Edit' | 'Category Fix'>('Draft Edit');
   const [dateFilter, setDateFilter] = useState<string>('All');
 
-  const filteredCorrections = corrections.filter((c) => c.type === activeTab);
+  useEffect(() => {
+    if (!loading && !session) router.replace('/');
+  }, [loading, session, router]);
 
+  if (loading) return <div>Loading...</div>;
+  if (!session) return null;
+
+  const filteredCorrections = corrections.filter((c) => c.type === activeTab);
+  
   return (
     <Layout>
       {/* Header */}
