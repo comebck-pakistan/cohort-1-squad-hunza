@@ -8,17 +8,18 @@ import { useRouter } from 'next/router';
 
 export default function Candidates() {
   const { candidates, jobRoles, setActiveResumeCandidate } = useAppState();
-const { session, loading } = useAuth();
-const router = useRouter(); // skip if already imported/declared
+  const { session, loading } = useAuth();
+  const router = useRouter(); 
 
-useEffect(() => {
-  if (!loading && !session) router.replace('/');
-}, [loading, session, router]);
-
-if (loading) return <div>Loading...</div>;
-if (!session) return null;
   const [selectedRole, setSelectedRole] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    if (!loading && !session) router.replace('/');
+  }, [loading, session, router]);
+
+  if (loading) return <div>Loading...</div>;
+  if (!session) return null;
 
   const filteredCandidates = candidates.filter((c) => {
     const matchesRole = selectedRole === 'All' || c.role === selectedRole;
