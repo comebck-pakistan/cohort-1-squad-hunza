@@ -20,24 +20,22 @@ import {
 
 export default function DraftQueue() {
   const { emails, approveDraft, discardDraft, updateDraftText, showToast } = useAppState();
+  const { session, loading } = useAuth();
+  const router = useRouter();
 
   const pendingEmails = emails.filter(
     (e) => e.draftReply && e.draftReply.status === 'pending'
   );
-  const { session, loading } = useAuth();
-const router = useRouter(); // skip if already imported/declared
 
-useEffect(() => {
-  if (!loading && !session) router.replace('/');
-}, [loading, session, router]);
-
-if (loading) return <div>Loading...</div>;
-if (!session) return null;
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedText, setEditedText] = useState<string>('');
 
   const currentEmail = pendingEmails[currentIndex];
+
+  useEffect(() => {
+    if (!loading && !session) router.replace('/');
+  }, [loading, session, router]);
 
   useEffect(() => {
     if (currentEmail && currentEmail.draftReply) {
@@ -55,6 +53,9 @@ if (!session) return null;
       });
     }
   }, [pendingEmails.length]);
+
+  if (loading) return <div>Loading...</div>;
+  if (!session) return null;
 
   const handleApproveCurrent = () => {
     if (!currentEmail) return;
