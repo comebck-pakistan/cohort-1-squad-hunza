@@ -38,6 +38,9 @@ export default function Landing() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth-callback?intent=${intent}`,
+          queryParams: {
+            prompt: 'select_account',
+          },
         },
       });
       if (error) throw error;

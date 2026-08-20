@@ -26,7 +26,7 @@ def build_gmail_auth_url(state: str) -> str:
         "scope": " ".join(GMAIL_SCOPES),
         "state": state,
         "access_type": "offline",   # required to get a refresh_token back
-        "prompt": "consent",        # forces Google to re-issue a refresh_token even on repeat connects
+        "prompt": "select_account consent",   # shows account picker AND forces refresh_token re-issue 
         "include_granted_scopes": "true",
     }
     return f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
