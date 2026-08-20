@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import {supabase} from '../lib/supabase';
 import {
   Bell,
   Search,
@@ -43,6 +44,10 @@ export default function TopBar() {
   const handleMarkAllRead = () => {
     setUnreadCount(0);
     showToast('Notifications marked as read');
+  };
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
   };
 
   return (
@@ -214,17 +219,15 @@ export default function TopBar() {
               <div className="space-y-3 text-xs">
                 <div className="flex items-center justify-between p-2.5 bg-[#EFE9DE]/70 rounded-xl">
                   <span className="font-bold text-zinc-800">Gmail Connection</span>
-                  <button
-                    onClick={() => {
-                      setGmailConnected(!isGmailConnected);
-                      showToast(isGmailConnected ? 'Gmail disconnected' : 'Gmail connected');
-                    }}
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowQuickSettings(false)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold ${
                       isGmailConnected ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
                     }`}
                   >
                     {isGmailConnected ? 'Connected' : 'Reconnect'}
-                  </button>
+                  </Link>
                 </div>
 
                 <Link
@@ -292,7 +295,7 @@ export default function TopBar() {
 
               <div className="pt-2 border-t border-[#EAE3D5]">
                 <button
-                  onClick={() => router.push('/login')}
+                  onClick={handleSignOut}
                   className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-rose-700 hover:bg-rose-50 cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" /> Sign Out
