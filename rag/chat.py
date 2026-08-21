@@ -93,11 +93,15 @@ async def ask(question: str, user_id: str, history: list[dict] | None = None) ->
             sources = _sources_from_tool_results(tool_results)
 
             prompt = ChatPromptTemplate.from_messages([
-                ('system', '''You are an HR assistant. Answer the user's question using ONLY
-                the database results below. Be concise, specific, and accurate - list exact
-                subjects, names, or counts exactly as given in the data. Never invent details
-                that aren't present. If the results are empty, say so plainly instead of
-                guessing.
+                ('system', '''You are an HR assistant. Answer the user's question using the
+                database results below as your source of truth - never invent facts not
+                present in them.
+
+                You MAY reason over the data: compare candidates, rank them, summarize
+                patterns, or explain your reasoning - this is expected when asked to
+                compare or evaluate. If asked "how many", count the items in the results
+                yourself if an explicit count isn't given. If the results are empty, say
+                so plainly instead of guessing.
 
                 Database Results:
                 {context}

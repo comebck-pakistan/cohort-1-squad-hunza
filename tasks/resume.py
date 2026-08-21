@@ -99,7 +99,7 @@ async def process_resume_from_gmail(
         candidate_info = extract_candidate_info(email_body, resume_text)
 
         # save to candidates table
-        save_candidate(email_id, user_id, candidate_info, file_url)
+        save_candidate(email_id, user_id, candidate_info, file_url, resume_text)
 
         return candidate_info
 
@@ -220,7 +220,7 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     return info
 
 
-def save_candidate(email_id, user_id, candidate_info, file_url):
+def save_candidate(email_id, user_id, candidate_info, file_url, resume_text):
     db = get_db()
     result = db.table("candidates").insert({
         "email_id": email_id,
@@ -235,6 +235,7 @@ def save_candidate(email_id, user_id, candidate_info, file_url):
         "education_degree": candidate_info.get("education_degree"),
         "education_institution": candidate_info.get("education_institution"),
         "education_gpa": candidate_info.get("education_gpa"),
+        "resume_text": resume_text,
     }).execute()
 
     if result.data:
