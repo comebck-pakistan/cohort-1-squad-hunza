@@ -129,13 +129,12 @@ def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
 
 
 def extract_candidate_info(email_body: str, resume_text: str) -> dict:
-    """
-    Uses Groq to extract structured candidate information
-    from email body and resume text.
-    Returns a dict with name, email, role, skills.
-    """
     llm = get_llm()
     parser = StrOutputParser()
+    
+    # keep total context small enough for Groq's 8000 TPM limit
+    max_resume_chars = 1800
+    max_email_chars = 500 if len(resume_text) > 500 else 1000
 
     prompt = ChatPromptTemplate.from_messages([
     ('system', '''You are an HR assistant extracting candidate information.
@@ -173,8 +172,8 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
 
     chain = prompt | llm | parser
     result = chain.invoke({
-        "email_body": email_body,
-        "resume_text": resume_text[:3000]  # limit to avoid token overflow
+        "email_body": email_body[:max_email_chars],
+        "resume_text": resume_text[:max_resume_chars]
     })
 
     # parse the response
