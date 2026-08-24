@@ -43,11 +43,14 @@ async def process_resume_from_gmail(
         # process first resume attachment found
         # filter for PDF and DOCX only
         resume_attachment = None
+        portfolio_attachment = None
         for att in attachments:
             filename = att["filename"].lower()
             if filename.endswith(".pdf") or filename.endswith(".docx"):
-                resume_attachment = att
-                break
+                if resume_attachment is None:
+                    resume_attachment = att
+                elif portfolio_attachment is None and "portfolio" in filename:
+                    portfolio_attachment = att
 
         if not resume_attachment:
             print(f"No PDF or DOCX attachment found for email {email_id}")
@@ -69,6 +72,26 @@ async def process_resume_from_gmail(
             file=file_bytes,
             file_options={"content-type": resume_attachment["mime_type"]}
         )
+
+        portfolio_attachment_url = None
+        if portfolio_attachment:
+            try:
+                portfolio_bytes = await gmail_client.get_attachment(
+                    access_token,
+                    message_id,
+                    portfolio_attachment["attachment_id"]
+                )
+                portfolio_filename = portfolio_attachment["filename"]
+                portfolio_storage_path = f"resumes/{user_id}/{email_id}/portfolio_{portfolio_filename}"
+
+                db.storage.from_("Resumes").upload(
+                    path=portfolio_storage_path,
+                    file=portfolio_bytes,
+                    file_options={"content-type": portfolio_attachment["mime_type"]}
+                )
+                portfolio_attachment_url = db.storage.from_("Resumes").get_public_url(portfolio_storage_path)
+            except Exception as e:
+                print(f"Portfolio attachment upload failed for email {email_id}: {e}")
 
         # get public URL
         file_url = db.storage.from_("Resumes").get_public_url(storage_path)
@@ -97,6 +120,11 @@ async def process_resume_from_gmail(
 
         # extract candidate info using AI
         candidate_info = extract_candidate_info(email_body, resume_text)
+
+        # prefer an actual portfolio attachment over a text-extracted link, if both exist
+        if portfolio_attachment_url:
+            candidate_info["portfolio_url"] = portfolio_attachment_url
+
 
         # save to candidates table
         save_candidate(email_id, user_id, candidate_info, file_url, resume_text)
@@ -153,6 +181,9 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     - education_degree: the degree name exactly as written (e.g. "B.S. Computer Science"). Use "N/A" if not mentioned.
     - education_institution: the university/institution name exactly as written. Use "N/A" if not mentioned.
     - education_gpa: the GPA/CGPA exactly as written, including scale if given (e.g. "3.8/4.0"). Use "N/A" if not mentioned anywhere in the resume — do not estimate or assume a typical GPA.
+    - portfolio_url: a link to the candidate's portfolio, GitHub, Behance, personal website, or similar professional showcase site, 
+      if mentioned anywhere in the email or resume. Use "N/A" if no such link is present. 
+      Do not use LinkedIn URLs for this field even if present — only use it if a dedicated portfolio/GitHub/Behance/personal site link is given.
 
     Email Body: {email_body}
     Resume Text: {resume_text}
@@ -167,6 +198,7 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     education_degree: <value>
     education_institution: <value>
     education_gpa: <value>
+    portfolio_url: <value>
     ''')
 ])
 
@@ -187,6 +219,7 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
         "education_degree": None,
         "education_institution": None,
         "education_gpa": None,
+        "portfolio_url": None,
     }
 
     def _clean(value: str) -> str | None:
@@ -216,11 +249,13 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
             info["education_institution"] = _clean(line.replace("education_institution:", ""))
         elif line.startswith("education_gpa:"):
             info["education_gpa"] = _clean(line.replace("education_gpa:", ""))
+        elif line.startswith("portfolio_url:"):
+            info["portfolio_url"] = _clean(line.replace("portfolio_url:", ""))
 
     return info
 
 
-def save_candidate(email_id, user_id, candidate_info, file_url, resume_text):
+def save_candidate(email_id, user_id, candidate_info, file_url, resume_text=None):
     db = get_db()
     result = db.table("candidates").insert({
         "email_id": email_id,
@@ -235,6 +270,7 @@ def save_candidate(email_id, user_id, candidate_info, file_url, resume_text):
         "education_degree": candidate_info.get("education_degree"),
         "education_institution": candidate_info.get("education_institution"),
         "education_gpa": candidate_info.get("education_gpa"),
+        "portfolio_url": candidate_info.get("portfolio_url"),
         "resume_text": resume_text,
     }).execute()
 

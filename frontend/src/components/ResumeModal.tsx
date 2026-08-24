@@ -100,14 +100,27 @@ export default function ResumeModal() {
 
         {/* Modal Footer Controls */}
         <div className="px-6 py-4 border-t border-[#EAE3D5] flex items-center justify-between bg-[#FBF9F5]">
-          <a
-            href={candidate.resumeUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs font-bold text-zinc-600 hover:text-zinc-900 flex items-center gap-1.5"
-          >
-            Open in new tab <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href={candidate.resumeUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-bold text-zinc-600 hover:text-zinc-900 flex items-center gap-1.5"
+            >
+              Open in new tab <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+
+            {candidate.portfolioUrl && (
+              <a
+                href={candidate.portfolioUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1.5"
+              >
+                View Portfolio <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
 
           <div className="flex items-center gap-3">
             <button

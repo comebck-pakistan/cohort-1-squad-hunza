@@ -37,6 +37,7 @@ export interface CandidateItem {
   educationDegree: string | null;
   educationInstitution: string | null;
   educationGpa: string | null;
+  portfolioUrl: string | null;
 }
 
 export interface CorrectionLogItem {
@@ -202,6 +203,7 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     educationDegree: 'B.S. Computer Science',
     educationInstitution: 'University of Washington',
     educationGpa: '3.8',
+    portfolioUrl: null,
   },
   {
     id: 'cand-2',
@@ -221,6 +223,7 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     educationDegree: 'M.S. Software Engineering',
     educationInstitution: 'Georgia Tech',
     educationGpa: '3.9',
+    portfolioUrl: null,
   },
   {
     id: 'cand-3',
@@ -240,6 +243,7 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     educationDegree: 'B.A. Interaction Design',
     educationInstitution: 'School of Visual Arts',
     educationGpa: '3.7',
+    portfolioUrl: null,
   },
   {
     id: 'cand-4',
@@ -259,6 +263,7 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     educationDegree: 'M.S. Computer Vision',
     educationInstitution: 'University of Michigan',
     educationGpa: '3.9',
+    portfolioUrl: null,
   },
 ];
 
