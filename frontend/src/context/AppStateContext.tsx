@@ -148,7 +148,8 @@ function mapBackendCandidates(rows: any[]): CandidateItem[] {
     educationDegree: row.education_degree || null,
     educationInstitution: row.education_institution || null,
     educationGpa: row.education_gpa || null,
-    portfolioUrl: row.portfolio_url || null,
+    portfolioUrls: Array.isArray(row.portfolio_urls) ? row.portfolio_urls : [],
+    portfolioUrl: Array.isArray(row.portfolio_urls) ? row.portfolio_urls[0] || '' : '',
   }));
 }
 
