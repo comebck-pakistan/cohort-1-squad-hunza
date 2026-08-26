@@ -9,6 +9,44 @@ export default function ResumeModal() {
 
   const candidate = activeResumeCandidate;
 
+function getLinkLabel(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+
+    const knownSites: Record<string, string> = {
+      'github.com': 'GitHub',
+      'gitlab.com': 'GitLab',
+      'bitbucket.org': 'Bitbucket',
+      'behance.net': 'Behance',
+      'dribbble.com': 'Dribbble',
+      'linkedin.com': 'LinkedIn',
+      'twitter.com': 'Twitter',
+      'x.com': 'X (Twitter)',
+      'medium.com': 'Medium',
+      'notion.so': 'Notion',
+      'figma.com': 'Figma',
+      'youtube.com': 'YouTube',
+      'instagram.com': 'Instagram',
+      'stackoverflow.com': 'Stack Overflow',
+      'kaggle.com': 'Kaggle',
+      'huggingface.co': 'Hugging Face',
+      'vercel.app': 'Live Site (Vercel)',
+      'netlify.app': 'Live Site (Netlify)',
+    };
+
+    for (const domain in knownSites) {
+      if (hostname === domain || hostname.endsWith(`.${domain}`)) {
+        return knownSites[domain];
+      }
+    }
+
+    // fallback: use the domain name itself, capitalized
+    const mainPart = hostname.split('.')[0];
+    return mainPart.charAt(0).toUpperCase() + mainPart.slice(1);
+  } catch {
+    return 'Link';
+  }
+}
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-fadeIn">
       <div className="bg-[#FBF9F5] border border-[#EAE3D5] rounded-3xl w-full max-w-3xl shadow-nixtio-lg overflow-hidden flex flex-col max-h-[90vh]">
@@ -130,7 +168,7 @@ export default function ResumeModal() {
                     rel="noreferrer"
                     className="text-xs font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1.5"
                   >
-                    Link {i + 1} <ExternalLink className="w-3.5 h-3.5" />
+                    {getLinkLabel(url)} <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 ))
               : null}
