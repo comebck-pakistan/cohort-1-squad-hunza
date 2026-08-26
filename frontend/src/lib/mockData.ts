@@ -38,6 +38,7 @@ export interface CandidateItem {
   educationInstitution: string | null;
   educationGpa: string | null;
   portfolioUrl: string | null;
+  documents: { url: string; filename: string }[];
 }
 
 export interface CorrectionLogItem {
@@ -204,6 +205,7 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     educationInstitution: 'University of Washington',
     educationGpa: '3.8',
     portfolioUrl: null,
+    documents: [],
   },
   {
     id: 'cand-2',
@@ -224,6 +226,7 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     educationInstitution: 'Georgia Tech',
     educationGpa: '3.9',
     portfolioUrl: null,
+    documents: [],
   },
   {
     id: 'cand-3',
@@ -244,6 +247,7 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     educationInstitution: 'School of Visual Arts',
     educationGpa: '3.7',
     portfolioUrl: null,
+    documents: [],
   },
   {
     id: 'cand-4',
@@ -264,6 +268,7 @@ export const INITIAL_CANDIDATES: CandidateItem[] = [
     educationInstitution: 'University of Michigan',
     educationGpa: '3.9',
     portfolioUrl: null,
+    documents: [],
   },
 ];
 

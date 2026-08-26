@@ -43,6 +43,7 @@ interface CandidateItem {
   educationInstitution: string | null;
   educationGpa: string | null;
   allLinks: string[];
+  documents: { url: string; filename: string }[];
 }
 
 interface CorrectionLogItem {
@@ -149,6 +150,9 @@ function mapBackendCandidates(rows: any[]): CandidateItem[] {
     educationInstitution: row.education_institution || null,
     educationGpa: row.education_gpa || null,
     allLinks: Array.isArray(row.all_links) ? row.all_links : [],
+    documents: Array.isArray(row.documents)
+      ? row.documents.map((d: any) => ({ url: d.url, filename: d.filename }))
+      : [],
   }));
 }
 

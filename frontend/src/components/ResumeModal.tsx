@@ -91,28 +91,39 @@ export default function ResumeModal() {
               )}
             </div>
 
-            {/* Document link info */}
-            <div className="p-3 bg-zinc-100 rounded-xl text-xs text-zinc-500 flex items-center justify-between">
-              <span className="truncate max-w-md font-mono text-[11px]">{candidate.resumeUrl}</span>
-            </div>
+            {/* Submitted Documents */}
+            {candidate.documents && candidate.documents.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase text-zinc-400 mb-1.5">Submitted Documents</p>
+                <div className="space-y-1.5">
+                  {candidate.documents.map((doc, i) => (
+                    <a
+                      key={i}
+                      href={doc.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between gap-3 p-3 bg-white border border-zinc-200 rounded-xl hover:border-amber-400 transition-all group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span className="text-xs font-bold text-zinc-800 truncate group-hover:text-amber-800">
+                          {doc.filename}
+                        </span>
+                      </div>
+                      <ExternalLink className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
         {/* Modal Footer Controls */}
         <div className="px-6 py-4 border-t border-[#EAE3D5] flex items-center justify-between bg-[#FBF9F5]">
-          <div className="flex items-center gap-4">
-            <a
-              href={candidate.resumeUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs font-bold text-zinc-600 hover:text-zinc-900 flex items-center gap-1.5"
-            >
-              Open in new tab <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-            
+          <div className="flex items-center gap-4 flex-wrap">
             {candidate.allLinks && candidate.allLinks.length > 0
               ? candidate.allLinks.map((url: string, i: number) => (
-                  <a
+              <a
                     key={i}
                     href={url}
                     target="_blank"
@@ -123,25 +134,14 @@ export default function ResumeModal() {
                   </a>
                 ))
               : null}
-
-              </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveResumeCandidate(null)}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-200 transition-all"
-            >
-              Close
-            </button>
-
-            <a
-              href={candidate.resumeUrl}
-              download
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm flex items-center gap-1.5 transition-all"
-            >
-              <Download className="w-3.5 h-3.5" /> Download File
-            </a>
           </div>
+
+          <button
+            onClick={() => setActiveResumeCandidate(null)}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-200 transition-all"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
