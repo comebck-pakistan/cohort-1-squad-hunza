@@ -46,7 +46,7 @@ async def process_resume_from_gmail(
             return None
 
         resume_attachment = None
-        portfolio_attachment = None
+        extra_attachments = []
         for att in attachments:
             filename = att["filename"].lower()
             is_doc = filename.endswith(".pdf") or filename.endswith(".docx")
@@ -54,16 +54,12 @@ async def process_resume_from_gmail(
                 continue
             if resume_attachment is None and ("resume" in filename or "cv" in filename):
                 resume_attachment = att
-            elif portfolio_attachment is None and "portfolio" in filename:
-                portfolio_attachment = att
+            else:
+                extra_attachments.append(att)
 
-        # fallback: if nothing matched "resume"/"cv" by name, just take the first doc found
-        if not resume_attachment:
-            for att in attachments:
-                filename = att["filename"].lower()
-                if filename.endswith(".pdf") or filename.endswith(".docx"):
-                    resume_attachment = att
-                    break
+        # fallback: if nothing matched "resume"/"cv" by name, treat the first doc as the resume
+        if not resume_attachment and extra_attachments:
+            resume_attachment = extra_attachments.pop(0)
 
         if not resume_attachment:
             print(f"No PDF or DOCX attachment found for email {email_id}")
@@ -86,33 +82,7 @@ async def process_resume_from_gmail(
 
         file_url = db.storage.from_("Resumes").get_public_url(storage_path)
 
-        portfolio_attachment_url = None
-        if portfolio_attachment:
-            try:
-                portfolio_bytes = await gmail_client.get_attachment(
-                    access_token,
-                    message_id,
-                    portfolio_attachment["attachment_id"]
-                )
-                portfolio_filename = portfolio_attachment["filename"]
-                portfolio_storage_path = f"resumes/{user_id}/{email_id}/portfolio_{portfolio_filename}"
-
-                db.storage.from_("Resumes").upload(
-                    path=portfolio_storage_path,
-                    file=portfolio_bytes,
-                    file_options={"content-type": portfolio_attachment["mime_type"]}
-                )
-                portfolio_attachment_url = db.storage.from_("Resumes").get_public_url(portfolio_storage_path)
-
-                db.table("candidate_documents").insert({
-                    "email_id": email_id,
-                    "file_url": portfolio_attachment_url,
-                    "original_filename": portfolio_filename,
-                    "uploaded_at": "now()"
-                }).execute()
-            except Exception as e:
-                print(f"Portfolio attachment upload failed for email {email_id}: {e}")
-
+        
         db.table("candidate_documents").insert({
             "email_id": email_id,
             "file_url": file_url,
@@ -121,6 +91,34 @@ async def process_resume_from_gmail(
         }).execute()
 
         print(f"Resume uploaded: {file_url}")
+
+        extra_document_urls = []
+        for extra_att in extra_attachments:
+            try:
+                extra_bytes = await gmail_client.get_attachment(
+                    access_token,
+                    message_id,
+                    extra_att["attachment_id"]
+                )
+                extra_filename = extra_att["filename"]
+                extra_storage_path = f"resumes/{user_id}/{email_id}/{extra_filename}"
+
+                db.storage.from_("Resumes").upload(
+                    path=extra_storage_path,
+                    file=extra_bytes,
+                    file_options={"content-type": extra_att["mime_type"]}
+                )
+                extra_url = db.storage.from_("Resumes").get_public_url(extra_storage_path)
+                extra_document_urls.append(extra_url)
+
+                db.table("candidate_documents").insert({
+                    "email_id": email_id,
+                    "file_url": extra_url,
+                    "original_filename": extra_filename,
+                    "uploaded_at": "now()"
+                }).execute()
+            except Exception as e:
+                print(f"Extra document upload failed for {extra_att['filename']} on email {email_id}: {e}")
 
         resume_text = extract_text_from_bytes(file_bytes, filename)
 
@@ -134,11 +132,9 @@ async def process_resume_from_gmail(
 
         candidate_info = extract_candidate_info(email_body, resume_text)
 
-        # sanitize extracted text links, then merge in the real attachment url (if any)
+        # sanitize extracted text links, then merge in real attachment urls (if any)
         safe_links = sanitize_links(candidate_info.get("all_links", []))
-        if portfolio_attachment_url:
-            safe_links = [portfolio_attachment_url] + safe_links
-        candidate_info["all_links"] = safe_links
+        candidate_info["all_links"] = extra_document_urls + safe_links
 
         save_candidate(email_id, user_id, candidate_info, file_url, resume_text)
 
