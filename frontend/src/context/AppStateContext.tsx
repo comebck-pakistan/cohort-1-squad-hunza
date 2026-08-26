@@ -42,7 +42,7 @@ interface CandidateItem {
   educationDegree: string | null;
   educationInstitution: string | null;
   educationGpa: string | null;
-  portfolioUrls: string[]
+  allLinks: string[];
 }
 
 interface CorrectionLogItem {
@@ -148,7 +148,7 @@ function mapBackendCandidates(rows: any[]): CandidateItem[] {
     educationDegree: row.education_degree || null,
     educationInstitution: row.education_institution || null,
     educationGpa: row.education_gpa || null,
-    portfolioUrls: Array.isArray(row.portfolio_urls) ? row.portfolio_urls : [],
+    allLinks: Array.isArray(row.all_links) ? row.all_links : [],
   }));
 }
 

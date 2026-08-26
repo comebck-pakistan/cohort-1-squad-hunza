@@ -109,19 +109,22 @@ export default function ResumeModal() {
             >
               Open in new tab <ExternalLink className="w-3.5 h-3.5" />
             </a>
+            
+            {candidate.allLinks && candidate.allLinks.length > 0
+              ? candidate.allLinks.map((url: string, i: number) => (
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1.5"
+                  >
+                    Link {i + 1} <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                ))
+              : null}
 
-            {candidate.portfolioUrls && candidate.portfolioUrls.length > 0 && candidate.portfolioUrls.map((url: string, i: number) => (
-              <a
-                key={i}
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1.5"
-              >
-                Portfolio {candidate.portfolioUrls.length > 1 ? i + 1 : ''} <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            ))}
-          </div>
+              </div>
 
           <div className="flex items-center gap-3">
             <button

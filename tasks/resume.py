@@ -1,5 +1,7 @@
 import io
 import httpx
+import re
+from urllib.parse import urlparse
 from pypdf import PdfReader
 from docx import Document
 from langchain_core.prompts import ChatPromptTemplate
@@ -7,6 +9,11 @@ from langchain_core.output_parsers import StrOutputParser
 from config import get_llm
 from database import get_db
 from app.modules.gmail_integration import gmail_client
+
+BLOCKED_DOMAINS = {
+    "bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly", "is.gd", "buff.ly",
+}
+SUSPICIOUS_TLDS = {".zip", ".mov", ".xyz", ".top", ".click", ".gq", ".tk"}
 
 
 async def process_resume_from_gmail(
@@ -23,7 +30,6 @@ async def process_resume_from_gmail(
     try:
         db = get_db()
 
-        # get raw message payload to find attachment info
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
                 f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{message_id}",
@@ -33,16 +39,12 @@ async def process_resume_from_gmail(
             resp.raise_for_status()
             raw_message = resp.json()
 
-        # get attachment info from payload
         attachments = gmail_client.get_attachment_info(raw_message.get("payload", {}))
 
         if not attachments:
             print(f"No attachments found for email {email_id}")
             return None
 
-        # process resume + optional portfolio attachment
-        # first PDF/DOCX with "resume" or "cv" in the filename is the resume;
-        # first one with "portfolio" in the filename is the portfolio
         resume_attachment = None
         portfolio_attachment = None
         for att in attachments:
@@ -55,18 +57,24 @@ async def process_resume_from_gmail(
             elif portfolio_attachment is None and "portfolio" in filename:
                 portfolio_attachment = att
 
+        # fallback: if nothing matched "resume"/"cv" by name, just take the first doc found
+        if not resume_attachment:
+            for att in attachments:
+                filename = att["filename"].lower()
+                if filename.endswith(".pdf") or filename.endswith(".docx"):
+                    resume_attachment = att
+                    break
+
         if not resume_attachment:
             print(f"No PDF or DOCX attachment found for email {email_id}")
             return None
 
-        # download attachment bytes from Gmail
         file_bytes = await gmail_client.get_attachment(
             access_token,
             message_id,
             resume_attachment["attachment_id"]
         )
 
-        # upload to Supabase Storage
         filename = resume_attachment["filename"]
         storage_path = f"resumes/{user_id}/{email_id}/{filename}"
 
@@ -76,10 +84,8 @@ async def process_resume_from_gmail(
             file_options={"content-type": resume_attachment["mime_type"]}
         )
 
-        # get public URL
         file_url = db.storage.from_("Resumes").get_public_url(storage_path)
 
-        # optional portfolio attachment - upload if present
         portfolio_attachment_url = None
         if portfolio_attachment:
             try:
@@ -97,10 +103,16 @@ async def process_resume_from_gmail(
                     file_options={"content-type": portfolio_attachment["mime_type"]}
                 )
                 portfolio_attachment_url = db.storage.from_("Resumes").get_public_url(portfolio_storage_path)
+
+                db.table("candidate_documents").insert({
+                    "email_id": email_id,
+                    "file_url": portfolio_attachment_url,
+                    "original_filename": portfolio_filename,
+                    "uploaded_at": "now()"
+                }).execute()
             except Exception as e:
                 print(f"Portfolio attachment upload failed for email {email_id}: {e}")
 
-        # save to candidate_documents table
         db.table("candidate_documents").insert({
             "email_id": email_id,
             "file_url": file_url,
@@ -110,10 +122,8 @@ async def process_resume_from_gmail(
 
         print(f"Resume uploaded: {file_url}")
 
-        # extract text from file
         resume_text = extract_text_from_bytes(file_bytes, filename)
 
-        # fetch email body for context
         email_data = db.table("emails")\
             .select("body_text")\
             .eq("id", email_id)\
@@ -122,14 +132,14 @@ async def process_resume_from_gmail(
 
         email_body = email_data.data.get("body_text", "") if email_data.data else ""
 
-        # extract candidate info using AI
         candidate_info = extract_candidate_info(email_body, resume_text)
 
-        # attach portfolio URL if we found one
+        # sanitize extracted text links, then merge in the real attachment url (if any)
+        safe_links = sanitize_links(candidate_info.get("all_links", []))
         if portfolio_attachment_url:
-            candidate_info["portfolio_url"] = portfolio_attachment_url
+            safe_links = [portfolio_attachment_url] + safe_links
+        candidate_info["all_links"] = safe_links
 
-        # save to candidates table
         save_candidate(email_id, user_id, candidate_info, file_url, resume_text)
 
         return candidate_info
@@ -138,10 +148,8 @@ async def process_resume_from_gmail(
         print(f"Resume processing failed for email {email_id}: {e}")
         return None
 
+
 def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
-    """
-    Extracts plain text from PDF or DOCX file bytes.
-    """
     filename_lower = filename.lower()
 
     if filename_lower.endswith(".pdf"):
@@ -162,13 +170,12 @@ def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
 def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     llm = get_llm()
     parser = StrOutputParser()
-    
-    # keep total context small enough for Groq's 8000 TPM limit
+
     max_resume_chars = 1800
     max_email_chars = 500 if len(resume_text) > 500 else 1000
 
     prompt = ChatPromptTemplate.from_messages([
-    ('system', '''You are an HR assistant extracting candidate information.
+        ('system', '''You are an HR assistant extracting candidate information.
 
     Read the email body and resume text below and extract the following.
     Only extract information that is explicitly stated in the text below.
@@ -184,10 +191,9 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     - education_degree: the degree name exactly as written (e.g. "B.S. Computer Science"). Use "N/A" if not mentioned.
     - education_institution: the university/institution name exactly as written. Use "N/A" if not mentioned.
     - education_gpa: the GPA/CGPA exactly as written, including scale if given (e.g. "3.8/4.0"). Use "N/A" if not mentioned anywhere in the resume — do not estimate or assume a typical GPA.
-    - portfolio_urls: any links to the candidate's portfolio, GitHub, Behance, personal website, or similar professional showcase sites, 
-      mentioned anywhere in the email or resume. If there are multiple distinct links (e.g. both a GitHub and a personal site), 
-      list all of them, comma separated. Use "N/A" if no such link is present. 
-      Do not use LinkedIn URLs for this field even if present — only include dedicated portfolio/GitHub/Behance/personal site links.
+    - all_links: every http:// or https:// URL mentioned anywhere in the email or resume text, comma separated. 
+      Include GitHub, Behance, personal websites, LinkedIn, or any other links exactly as written. 
+      Do not invent or modify any URL — only include links that literally appear in the text. Use "N/A" if no links are present.
 
     Email Body: {email_body}
     Resume Text: {resume_text}
@@ -202,9 +208,9 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
     education_degree: <value>
     education_institution: <value>
     education_gpa: <value>
-    portfolio_urls: <comma separated links>
+    all_links: <comma separated urls>
     ''')
-])
+    ])
 
     chain = prompt | llm | parser
     result = chain.invoke({
@@ -212,7 +218,6 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
         "resume_text": resume_text[:max_resume_chars]
     })
 
-    # parse the response
     info = {
         "full_name": None,
         "candidate_email": None,
@@ -223,7 +228,7 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
         "education_degree": None,
         "education_institution": None,
         "education_gpa": None,
-        "portfolio_url": [],
+        "all_links": [],
     }
 
     def _clean(value: str) -> str | None:
@@ -253,12 +258,39 @@ def extract_candidate_info(email_body: str, resume_text: str) -> dict:
             info["education_institution"] = _clean(line.replace("education_institution:", ""))
         elif line.startswith("education_gpa:"):
             info["education_gpa"] = _clean(line.replace("education_gpa:", ""))
-        elif line.startswith("portfolio_urls:"):
-            urls_str = line.replace("portfolio_urls:", "").strip()
-            if urls_str.upper() not in ("N/A", "NA", "NONE", ""):
-                info["portfolio_urls"] = [u.strip() for u in urls_str.split(",") if u.strip()]
+        elif line.startswith("all_links:"):
+            links_str = line.replace("all_links:", "").strip()
+            if links_str.upper() not in ("N/A", "NA", "NONE", ""):
+                info["all_links"] = [u.strip() for u in links_str.split(",") if u.strip()]
 
     return info
+
+
+def sanitize_links(links: list[str]) -> list[str]:
+    safe_links = []
+    for link in links:
+        try:
+            if not re.match(r"^https?://", link, re.IGNORECASE):
+                continue
+            parsed = urlparse(link)
+            host = parsed.hostname or ""
+
+            if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", host):
+                continue
+
+            if host.lower() in BLOCKED_DOMAINS:
+                continue
+
+            if any(host.lower().endswith(tld) for tld in SUSPICIOUS_TLDS):
+                continue
+
+            if len(link) > 500:
+                continue
+
+            safe_links.append(link)
+        except Exception:
+            continue
+    return safe_links
 
 
 def save_candidate(email_id, user_id, candidate_info, file_url, resume_text=None):
@@ -276,7 +308,7 @@ def save_candidate(email_id, user_id, candidate_info, file_url, resume_text=None
         "education_degree": candidate_info.get("education_degree"),
         "education_institution": candidate_info.get("education_institution"),
         "education_gpa": candidate_info.get("education_gpa"),
-        "portfolio_urls": candidate_info.get("portfolio_urls", []),
+        "all_links": candidate_info.get("all_links", []),
         "resume_text": resume_text,
     }).execute()
 
@@ -284,5 +316,4 @@ def save_candidate(email_id, user_id, candidate_info, file_url, resume_text=None
         print(f"Candidate saved: {candidate_info.get('full_name')}")
         return result.data[0]
 
-    
     return None
