@@ -31,7 +31,10 @@ def classifier(subject:str,body:str) -> str:
         Now the second task is to identify the priority of the email on the basis of urgency and you have to prioritize on the basis given below.
 
         2. Priority — exactly one from: High, Medium, Low
-        High = urgent time-sensitive (interview tomorrow, offer expiring, etc.)
+        High = urgent time-sensitive situations. This includes (but is not limited to):
+        - Interview Scheduling or Interview Reschedule requests (these always risk a missed/conflicting appointment and should default to High unless the email explicitly says there's no rush)
+        - Offer Acceptance or Offer Rejection (time-sensitive decisions)
+        - Any email mentioning a specific near-term date/deadline
         Medium = needs response soon but not urgent
         Low = informational, no immediate action needed
 
