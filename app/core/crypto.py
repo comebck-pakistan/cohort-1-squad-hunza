@@ -1,5 +1,5 @@
 """
-Encrypts the Gmail refresh token before it's stored in gmail_connections.
+Encrypts the Gmail refresh token before it's stored in email_connections.
 A DB leak (backup, misconfigured RLS, SQL injection elsewhere) shouldn't
 directly hand out live access to someone's Gmail inbox - this is the one
 thing standing between "leaked row" and "leaked row + attacker can read/send

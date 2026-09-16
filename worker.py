@@ -98,3 +98,5 @@ if __name__ == "__main__":
         print("Redis connected successfully")
     else:
         print("Could not connect to Redis - check your REDIS_URL in .env")
+
+        #
