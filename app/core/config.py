@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     GMAIL_REDIRECT_URI: str  # e.g. http://localhost:8000/gmail/callback
     GMAIL_TOKEN_ENCRYPTION_KEY: str  # Fernet key - generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
+    # Outlook integration (Microsoft Graph API - separate app registration from Gmail)
+    OUTLOOK_CLIENT_ID: str
+    OUTLOOK_CLIENT_SECRET: str
+    OUTLOOK_REDIRECT_URI: str  # e.g. https://hr-agent-backend-z9tv.onrender.com/outlook/callback
+
     # Redis (OAuth state storage here today; Celery broker later)
     REDIS_URL: str = "redis://localhost:6379/0"
 
