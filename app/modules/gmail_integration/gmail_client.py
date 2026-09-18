@@ -76,7 +76,7 @@ def _parse_message(raw: dict) -> dict:
     sender_name, sender_email = _parse_from_header(headers.get("from", ""))
 
     return {
-        "gmail_message_id": raw["id"],
+        "provider_message_id": raw["id"],
         "gmail_thread_id": raw.get("threadId"),
         "sender_email": sender_email,
         "sender_name": sender_name,

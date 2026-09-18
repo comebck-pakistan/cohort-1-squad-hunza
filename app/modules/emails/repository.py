@@ -9,8 +9,8 @@ from app.core.supabase_client import get_supabase
 
 def insert_email_if_new(user_id: str, parsed: dict) -> dict | None:
     """
-    Returns the inserted row, or None if this gmail_message_id already exists
-    (relies on the emails.gmail_message_id UNIQUE constraint - cheaper and
+    Returns the inserted row, or None if this provider_message_id already exists
+    (relies on the emails.provider_message_id UNIQUE constraint - cheaper and
     safer than a separate SELECT-then-INSERT race).
     """
     db = get_supabase()

@@ -11,7 +11,7 @@ class ClassificationOut(BaseModel):
 
 class QueueItemOut(BaseModel):
     id: str
-    gmail_message_id: str
+    provider_message_id: str
     gmail_thread_id: str | None = None
     sender_email: str | None = None
     sender_name: str | None = None
