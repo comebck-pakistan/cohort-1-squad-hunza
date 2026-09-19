@@ -21,7 +21,7 @@ export default function AuthCallback() {
 
       let connections: any[] = [];
       try {
-        const status = await apiService.getGmailStatus();
+        const status = await apiService.getAllConnectionsStatus();
         connections = Array.isArray(status) ? status : [];
       } catch (err) {
         console.error('Failed to check Gmail status', err);

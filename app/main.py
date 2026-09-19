@@ -12,6 +12,7 @@ from app.modules.activity.router import router as activity_router
 from app.modules.chat.router import router as chat_router
 from app.modules.candidates.router import router as candidates_router
 from app.modules.outlook_integration.router import router as outlook_router
+from app.modules.gmail_outlook_connection.router import router as all_connections_router
 
 settings = get_settings()
 
@@ -40,6 +41,8 @@ app.include_router(activity_router)
 app.include_router(chat_router)
 app.include_router(candidates_router)
 app.include_router(outlook_router)
+app.include_router(all_connections_router)
+
 
 @app.get("/health")
 async def health():

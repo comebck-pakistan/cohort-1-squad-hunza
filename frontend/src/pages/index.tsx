@@ -15,7 +15,7 @@ export default function Landing() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         try {
-          const status = await apiService.getGmailStatus();
+          const status = apiService.getAllConnectionsStatus();
           const hasActive = Array.isArray(status) && status.some((c: any) => c.is_active);
           if (hasActive) {
             router.replace('/dashboard');
