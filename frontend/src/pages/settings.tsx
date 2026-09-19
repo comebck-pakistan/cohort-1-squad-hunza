@@ -30,13 +30,15 @@ export default function SettingsPage() {
     isGmailConnected,
     setGmailConnected,
     gmailAddress,
+    isOutlookConnected,
+    outlookAddress,
     replyTone,
     updateReplyTone,
     showToast,
-} = useAppState();
-
-const router = useRouter();
-const [disconnecting, setDisconnecting] = useState(false);
+  } = useAppState();
+  
+  const router = useRouter();
+  const [disconnecting, setDisconnecting] = useState(false);
 const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 const [deleting, setDeleting] = useState(false);
 const [newCatInput, setNewCatInput] = useState<string>('');
@@ -90,6 +92,34 @@ const handleDeleteConnection = async () => {
       showToast('Failed to delete connection.');
       setDeleting(false);
       setShowDeleteConfirm(false);
+    }
+};
+
+const handleConnectOutlook = async () => {
+    try {
+      const result = await apiService.connectOutlook();
+      if (result?.authorization_url) {
+        window.location.href = result.authorization_url;
+      }
+    } catch (err) {
+      console.error('Outlook connect failed', err);
+      showToast('Unable to start Outlook connection.');
+    }
+};
+
+const handleDisconnectOutlook = async () => {
+    if (!confirm('Disconnect Outlook?')) return;
+    try {
+      const status = await apiService.getOutlookStatus();
+      const active = Array.isArray(status) ? status.find((c: any) => c.is_active) : null;
+      if (active) {
+        await apiService.disconnectOutlook(active.id);
+        showToast('Outlook disconnected.');
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Outlook disconnect failed', err);
+      showToast('Failed to disconnect Outlook.');
     }
 };
 
@@ -233,6 +263,30 @@ return (
             <Trash2 className="w-3.5 h-3.5" /> Delete Connection & All Data
           </button>
         )}
+
+        {/* Outlook Connection */}
+          <div className="p-4 bg-[#EFE9DE]/60 border border-[#E8E1D2] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
+            <div>
+              <p className="text-xs font-extrabold text-zinc-900">Outlook Account:</p>
+              <p className="text-xs text-zinc-600 font-mono font-semibold">{outlookAddress || 'Not connected'}</p>
+            </div>
+
+            {isOutlookConnected ? (
+              <button
+                onClick={handleDisconnectOutlook}
+                className="bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5 text-rose-600" /> Disconnect Outlook
+              </button>
+            ) : (
+              <button
+                onClick={handleConnectOutlook}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all"
+              >
+                Connect Outlook
+              </button>
+            )}
+          </div>
 
         {showDeleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm">

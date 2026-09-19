@@ -68,6 +68,9 @@ interface AppStateContextType {
   isGmailConnected: boolean;
   setGmailConnected: (val: boolean) => void;
   gmailAddress: string | null;
+  isOutlookConnected: boolean;
+  setOutlookConnected: (val: boolean) => void;
+  outlookAddress: string | null;
   onboarding: OnboardingState;
   updateOnboarding: (data: Partial<OnboardingState>) => void;
   emails: EmailItem[];
@@ -159,6 +162,8 @@ function mapBackendCandidates(rows: any[]): CandidateItem[] {
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isGmailConnected, setGmailConnected] = useState<boolean>(false);
   const [gmailAddress, setGmailAddress] = useState<string | null>(null);
+  const [isOutlookConnected, setOutlookConnected] = useState<boolean>(false);
+  const [outlookAddress, setOutlookAddress] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [jobDescriptions, setJobDescriptions] = useState<Record<string, string>>({});
   const [replyTone, setReplyToneState] = useState<string>('Friendly');
@@ -401,7 +406,7 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
           return;
         }
 
-        const [emailsData, gmailStatus, activityData, allDrafts,candidatesData,emailCount,settingsData] = await Promise.all([
+       const [emailsData, gmailStatus, activityData, allDrafts, candidatesData, emailCount, settingsData, outlookStatus] = await Promise.all([
           apiService.getEmails(),
           apiService.getGmailStatus(),
           apiService.getActivityLog(),
@@ -409,6 +414,7 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
           apiService.getCandidates(),
           apiService.getEmailCount(),
           apiService.getSettings(),
+          apiService.getOutlookStatus().catch(() => []),
         ]);
 
         if (!mounted) return;
@@ -470,7 +476,7 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
               .filter((c: any) => c.is_active)
               .sort((a: any, b: any) => new Date(b.connected_at).getTime() - new Date(a.connected_at).getTime())[0]
           : null;
-          setGmailAddress(activeConnection?.gmail_address || null);
+          setGmailAddress(activeConnection?.email_address || null);
 
         const mappedCorrections: CorrectionLogItem[] = Array.isArray(activityData)
           ? activityData.map((a: any) => ({
@@ -490,6 +496,10 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
             }))
           : [];
         setCorrections(mappedCorrections);
+        
+        const activeOutlook = Array.isArray(outlookStatus) ? outlookStatus.find((c: any) => c.is_active) : null;
+        setOutlookConnected(!!activeOutlook);
+        setOutlookAddress(activeOutlook?.email_address || null);
 
       } catch (err) {
         console.error('Failed to load app state', err);
@@ -497,6 +507,8 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
       } finally {
         if (mounted) setIsLoading(false);
       }
+      
+
     };
 
     loadAppState();
@@ -525,6 +537,9 @@ const updateEmailCategory = async (emailId: string, newCategory: string) => {
         isGmailConnected,
         setGmailConnected,
         gmailAddress,
+        isOutlookConnected,
+        setOutlookConnected,
+        outlookAddress,
         onboarding,
         updateOnboarding,
         emails,

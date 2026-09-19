@@ -160,4 +160,22 @@ async getAllConnectionsStatus() {
   return res.data;
 },
 
+async connectOutlook() {
+  const res = await client.get('/outlook/connect');
+  return res.data;
+},
+
+async getOutlookStatus() {
+  const res = await client.get('/outlook/status');
+  return res.data;
+},
+
+async disconnectOutlook(connectionId: string) {
+  await client.post(`/outlook/${connectionId}/disconnect`);
+},
+
+async deleteOutlookConnectionAndData(connectionId: string) {
+  await client.delete(`/outlook/${connectionId}/delete-all-data`);
+},
+
 };
