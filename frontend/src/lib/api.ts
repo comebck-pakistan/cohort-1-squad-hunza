@@ -156,7 +156,7 @@ async deleteGmailConnectionAndData(connectionId: string) {
   await client.delete(`/gmail/${connectionId}/delete-all-data`);
 },
 async getAllConnectionsStatus() {
-  const res = await client.get('/connections/all-status');  // adjust path to match wherever you mount it
+  const res = await client.get('/allconnections/all-status');  // adjust path to match wherever you mount it
   return res.data;
 },
 

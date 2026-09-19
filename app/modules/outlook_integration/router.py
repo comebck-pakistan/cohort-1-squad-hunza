@@ -25,7 +25,14 @@ async def outlook_connect(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/callback")
-async def outlook_callback(request: Request, code: str, state: str):
+async def outlook_callback(request: Request, code: str | None = None, state: str | None = None, error: str | None = None, error_description: str | None = None):
+    if error:
+        print(f"Outlook OAuth error from Microsoft: {error} - {error_description}")
+        return RedirectResponse(f"{settings.FRONTEND_URL}/settings?outlook_error={error}")
+
+    if not code or not state:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code or state")
+
     is_valid, user_id = verify_state(state)
     if not is_valid or not user_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OAuth state")
@@ -33,7 +40,6 @@ async def outlook_callback(request: Request, code: str, state: str):
     await service.handle_outlook_callback(code=code, user_id=user_id)
 
     return RedirectResponse(f"{settings.FRONTEND_URL}/settings?connected=true")
-
 
 @router.get("/status", response_model=list[OutlookConnectionOut])
 async def outlook_status(current_user: dict = Depends(get_current_user)):
