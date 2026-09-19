@@ -144,6 +144,127 @@ async def process_resume_from_gmail(
         print(f"Resume processing failed for email {email_id}: {e}")
         return None
 
+async def process_resume_from_outlook(
+    access_token: str,
+    message_id: str,
+    email_id: str,
+    user_id: str
+) -> dict:
+    """
+    Outlook-specific version. Uses Microsoft Graph's attachment API
+    (separate list call, different auth/shape) instead of Gmail's, but
+    otherwise mirrors process_resume_from_gmail's flow exactly, reusing
+    the shared extract_text_from_bytes / extract_candidate_info /
+    sanitize_links / save_candidate helpers below in this same file.
+    """
+    from app.modules.outlook_integration import outlook_client
+
+    try:
+        db = get_db()
+
+        attachments = await outlook_client.list_attachments(access_token, message_id)
+
+        if not attachments:
+            print(f"No attachments found for Outlook email {email_id}")
+            return None
+
+        resume_attachment = None
+        extra_attachments = []
+        for att in attachments:
+            filename = att["filename"].lower()
+            is_doc = filename.endswith(".pdf") or filename.endswith(".docx")
+            if not is_doc:
+                continue
+            if resume_attachment is None and ("resume" in filename or "cv" in filename):
+                resume_attachment = att
+            else:
+                extra_attachments.append(att)
+
+        if not resume_attachment and extra_attachments:
+            resume_attachment = extra_attachments.pop(0)
+
+        if not resume_attachment:
+            print(f"No PDF or DOCX attachment found for Outlook email {email_id}")
+            return None
+
+        file_bytes = await outlook_client.get_attachment(
+            access_token,
+            message_id,
+            resume_attachment["attachment_id"]
+        )
+
+        filename = resume_attachment["filename"]
+        storage_path = f"resumes/{user_id}/{email_id}/{filename}"
+
+        db.storage.from_("Resumes").upload(
+            path=storage_path,
+            file=file_bytes,
+            file_options={"content-type": resume_attachment["mime_type"]}
+        )
+
+        file_url = db.storage.from_("Resumes").get_public_url(storage_path)
+
+        db.table("candidate_documents").insert({
+            "email_id": email_id,
+            "file_url": file_url,
+            "original_filename": filename,
+            "uploaded_at": "now()"
+        }).execute()
+
+        print(f"Outlook resume uploaded: {file_url}")
+
+        extra_document_urls = []
+        for extra_att in extra_attachments:
+            try:
+                extra_bytes = await outlook_client.get_attachment(
+                    access_token,
+                    message_id,
+                    extra_att["attachment_id"]
+                )
+                extra_filename = extra_att["filename"]
+                extra_storage_path = f"resumes/{user_id}/{email_id}/{extra_filename}"
+
+                db.storage.from_("Resumes").upload(
+                    path=extra_storage_path,
+                    file=extra_bytes,
+                    file_options={"content-type": extra_att["mime_type"]}
+                )
+                extra_url = db.storage.from_("Resumes").get_public_url(extra_storage_path)
+                extra_document_urls.append(extra_url)
+
+                db.table("candidate_documents").insert({
+                    "email_id": email_id,
+                    "file_url": extra_url,
+                    "original_filename": extra_filename,
+                    "uploaded_at": "now()"
+                }).execute()
+            except Exception as e:
+                print(f"Extra Outlook document upload failed for {extra_att['filename']} on email {email_id}: {e}")
+
+        resume_text = extract_text_from_bytes(file_bytes, filename)
+
+        email_data = db.table("emails")\
+            .select("body_text")\
+            .eq("id", email_id)\
+            .single()\
+            .execute()
+
+        email_body = email_data.data.get("body_text", "") if email_data.data else ""
+
+        candidate_info = extract_candidate_info(email_body, resume_text)
+
+        safe_links = sanitize_links(candidate_info.get("all_links", []))
+        candidate_info["all_links"] = extra_document_urls + safe_links
+
+        save_candidate(email_id, user_id, candidate_info, file_url, resume_text)
+
+        return candidate_info
+
+    except Exception as e:
+        print(f"Outlook resume processing failed for email {email_id}: {e}")
+        return None
+
+
 
 def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
     filename_lower = filename.lower()

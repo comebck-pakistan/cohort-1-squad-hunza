@@ -37,14 +37,14 @@ async def handle_gmail_callback(code: str, user_id: str) -> dict:
         )
 
     profile = await gmail_client.get_profile(access_token)
-    gmail_address = profile["emailAddress"]
+    email_address = profile["emailAddress"]
 
     encrypted = encrypt(refresh_token)
-    existing = repo.get_connection_by_user_and_address(user_id, gmail_address)
+    existing = repo.get_connection_by_user_and_address(user_id, email_address)
     if existing:
         connection = repo.reactivate_connection(existing["id"], encrypted)
     else:
-        connection = repo.create_connection(user_id, gmail_address, encrypted)
+        connection = repo.create_connection(user_id, email_address, encrypted)
     await start_watch(connection["id"], user_id)
     return connection
 
@@ -83,7 +83,7 @@ async def sync_now(connection_id: str, user_id: str, max_results: int = 20) -> d
 
     for message_id in message_ids:
         parsed = await gmail_client.get_message(access_token, message_id)
-        if parsed.get("sender_email", "").lower() == connection["gmail_address"].lower():
+        if parsed.get("sender_email", "").lower() == connection["email_address"].lower():
             continue  # skip our own sent reply, not a genuine inbound email
         row = emails_repo.insert_email_if_new(user_id, {**parsed, "gmail_connection_id": connection_id})
         if row:
@@ -124,7 +124,7 @@ async def start_watch(connection_id: str, user_id: str) -> dict:
     access_token = google_tokens["access_token"]
 
     result = await gmail_client.watch(access_token, GMAIL_PUBSUB_TOPIC)
-    print(f"WATCH RESULT for {connection['gmail_address']}: {result}")
+    print(f"WATCH RESULT for {connection['email_address']}: {result}")
 
     history_id = str(result.get("historyId", ""))
     if history_id:
@@ -187,7 +187,7 @@ async def handle_pubsub_notification(body: dict, background_tasks) -> None:
                 print(f"Skipping message {message_id}: {e}")
                 continue
             
-            if parsed.get("sender_email", "").lower() == connection["gmail_address"].lower():
+            if parsed.get("sender_email", "").lower() == connection["email_address"].lower():
                 continue  # skip our own sent reply, not a genuine inbound email
             row = emails_repo.insert_email_if_new(user_id, {**parsed, "gmail_connection_id": connection_id})
             if row:

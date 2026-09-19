@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     OUTLOOK_CLIENT_ID: str
     OUTLOOK_CLIENT_SECRET: str
     OUTLOOK_REDIRECT_URI: str  # e.g. https://hr-agent-backend-z9tv.onrender.com/outlook/callback
+    OUTLOOK_WEBHOOK_URL: str  # e.g. https://hr-agent-backend-z9tv.onrender.com/outlook/subscription/webhook
 
     # Redis (OAuth state storage here today; Celery broker later)
     REDIS_URL: str = "redis://localhost:6379/0"

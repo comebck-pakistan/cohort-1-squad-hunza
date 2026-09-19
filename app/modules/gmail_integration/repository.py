@@ -1,13 +1,13 @@
 from app.core.supabase_client import get_supabase
 
 
-def get_connection_by_user_and_address(user_id: str, gmail_address: str) -> dict | None:
+def get_connection_by_user_and_address(user_id: str, email_address: str) -> dict | None:
     db = get_supabase()
     res = (
         db.table("email_connections")
         .select("*")
         .eq("user_id", user_id)
-        .eq("gmail_address", gmail_address)
+        .eq("email_address", email_address)
         .limit(1)
         .execute()
     )
@@ -26,12 +26,12 @@ def list_connections_for_user(user_id: str) -> list[dict]:
     return res.data
 
 
-def create_connection(user_id: str, gmail_address: str, encrypted_refresh_token: str) -> dict:
+def create_connection(user_id: str, email_address: str, encrypted_refresh_token: str) -> dict:
     from datetime import datetime, timezone
     db = get_supabase()
     res = db.table("email_connections").insert({
         "user_id": user_id,
-        "gmail_address": gmail_address,
+        "email_address": email_address,
         "refresh_token": encrypted_refresh_token,
         "is_active": True,
         "connected_at": datetime.now(timezone.utc).isoformat(),
@@ -59,12 +59,12 @@ def set_active(connection_id: str, is_active: bool) -> None:
     db.table("email_connections").update({"is_active": is_active}).eq("id", connection_id).execute()
 
 
-def get_connection_by_address(gmail_address: str) -> dict | None:
+def get_connection_by_address(email_address: str) -> dict | None:
     """Find active connection by Gmail address — used by Pub/Sub webhook."""
     db = get_supabase()
     res = db.table("email_connections")\
         .select("*")\
-        .eq("gmail_address", gmail_address)\
+        .eq("email_address", email_address)\
         .eq("is_active", True)\
         .order("connected_at", desc=True)\
         .limit(1)\
